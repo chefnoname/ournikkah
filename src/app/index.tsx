@@ -1,120 +1,171 @@
-import { Card } from '@/components/Card';
-import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { BorderRadius, Colors, FontSize, Spacing } from '@/constants/theme';
-import { useApi } from '@/hooks/useApi';
-import { useFavourites } from '@/hooks/useFavourites';
-import type { Item } from '@/types';
+import { getGuestToken } from '@/lib/fetchWithAuth';
+import { getSavedWorkspaceId, useWorkspace } from '@/lib/useWorkspace';
 import { useRouter } from 'expo-router';
-import { ActivityIndicator, FlatList, Image, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-export default function HomeScreen() {
-  const { data: items, error, isLoading } = useApi<Item[]>('/products');
+export default function Welcome() {
   const router = useRouter();
-  const { isFavourite } = useFavourites();
+  const { startGuestSession, setWorkspaceId } = useWorkspace();
+  const [isStarting, setIsStarting] = useState(false);
+  const [checking, setChecking] = useState(true);
 
-  if (isLoading) {
-    return (
-      <ScreenWrapper scrollable={false} style={styles.center}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-      </ScreenWrapper>
-    );
-  }
+  useEffect(() => {
+    (async () => {
+      const token = await getGuestToken();
+      const wsId = await getSavedWorkspaceId();
+      if (token && wsId) {
+        await setWorkspaceId(wsId);
+        router.replace('/(tabs)/home');
+      }
+      setChecking(false);
+    })();
+  }, []);
 
-  if (error) {
+  const handleStartPlanning = async () => {
+    setIsStarting(true);
+    try {
+      await startGuestSession();
+      router.replace('/onboarding');
+    } catch (e) {
+      console.error('Failed to start planning:', e);
+    } finally {
+      setIsStarting(false);
+    }
+  };
+
+  if (checking) {
     return (
-      <ScreenWrapper scrollable={false} style={styles.center}>
-        <Text style={styles.errorText}>Something went wrong</Text>
-        <Text style={styles.errorDetail}>{error}</Text>
-      </ScreenWrapper>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={Colors.gold} />
+      </View>
     );
   }
 
   return (
-    <ScreenWrapper scrollable={false}>
-      <FlatList
-        data={items}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => (
-          <Card
-            onPress={() => router.push(`/items/${item.id}`)}
-            style={styles.card}
-          >
-            <View style={styles.row}>
-              <Image source={{ uri: item.image }} style={styles.image} />
-              <View style={styles.info}>
-                <Text style={styles.title} numberOfLines={2}>
-                  {item.title}
-                </Text>
-                <Text style={styles.price}>${item.price.toFixed(2)}</Text>
-                {isFavourite(item.id) && (
-                  <Text style={styles.savedBadge}>♥ Saved</Text>
-                )}
-              </View>
-            </View>
-          </Card>
-        )}
-      />
-    </ScreenWrapper>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.push('/auth')}>
+          <Text style={styles.signInText}>Sign in</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.content}>
+        <View style={styles.iconCircle}>
+          <Text style={styles.heartIcon}>♥</Text>
+        </View>
+
+        <Text style={styles.title}>MyNikkah</Text>
+        <Text style={styles.subtitle}>Plan your perfect wedding journey together</Text>
+
+        <TouchableOpacity
+          style={[styles.startButton, isStarting && styles.buttonDisabled]}
+          onPress={handleStartPlanning}
+          disabled={isStarting}
+          activeOpacity={0.8}
+        >
+          {isStarting ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.startButtonText}>Start Planning</Text>
+          )}
+        </TouchableOpacity>
+
+        <Text style={styles.noAccountText}>No account required to get started</Text>
+      </View>
+
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>Made with love for Muslim couples</Text>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  center: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  list: {
-    padding: Spacing.md,
-    gap: Spacing.sm,
-    paddingBottom: Spacing.xl,
-  },
-  card: {
-    marginBottom: Spacing.xs,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-  },
-  image: {
-    width: 72,
-    height: 72,
-    borderRadius: BorderRadius.sm,
-    backgroundColor: Colors.background,
-    resizeMode: 'contain',
-  },
-  info: {
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.background,
   },
-  title: {
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  header: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+    alignItems: 'flex-end',
+  },
+  signInText: {
     fontSize: FontSize.md,
-    fontWeight: '600',
-    color: Colors.text,
-    marginBottom: Spacing.xs,
+    fontWeight: '500',
+    color: Colors.textSecondary,
   },
-  price: {
-    fontSize: FontSize.lg,
-    fontWeight: '700',
-    color: Colors.primary,
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    gap: Spacing.md,
   },
-  savedBadge: {
-    fontSize: FontSize.xs,
-    color: Colors.success,
-    fontWeight: '600',
-    marginTop: Spacing.xs,
-  },
-  errorText: {
-    fontSize: FontSize.lg,
-    fontWeight: '600',
-    color: Colors.text,
+  iconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Colors.goldLight,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: Spacing.sm,
   },
-  errorDetail: {
-    fontSize: FontSize.sm,
+  heartIcon: {
+    fontSize: 36,
+    color: Colors.gold,
+  },
+  title: {
+    fontSize: FontSize.hero,
+    fontWeight: '700',
+    color: Colors.text,
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontSize: FontSize.base,
     color: Colors.textSecondary,
     textAlign: 'center',
-    paddingHorizontal: Spacing.lg,
+  },
+  startButton: {
+    width: '100%',
+    height: 56,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: Spacing.xl,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  buttonDisabled: { opacity: 0.6 },
+  startButtonText: {
+    color: '#fff',
+    fontSize: FontSize.base,
+    fontWeight: '600',
+  },
+  noAccountText: {
+    fontSize: FontSize.md,
+    color: Colors.textSecondary,
+    marginTop: Spacing.sm,
+  },
+  footer: {
+    padding: Spacing.lg,
+    alignItems: 'center',
+  },
+  footerText: {
+    fontSize: FontSize.md,
+    color: Colors.textSecondary,
   },
 });

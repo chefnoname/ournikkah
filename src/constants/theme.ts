@@ -1,13 +1,17 @@
 export const Colors = {
-  primary: '#2563EB',
-  primaryDark: '#1D4ED8',
-  background: '#F8FAFC',
+  // MyNikkah brand palette
+  primary: '#1A1A1A',
+  gold: '#C9A96E',
+  goldLight: '#FDF3E3',
+  background: '#FDFAF6',
   surface: '#FFFFFF',
-  text: '#0F172A',
-  textSecondary: '#64748B',
+  text: '#1A1A1A',
+  textSecondary: '#6B6B6B',
   border: '#E2E8F0',
   error: '#EF4444',
   success: '#22C55E',
+  rose: '#E8C4B8',
+  roseLight: '#F5E0D8',
 } as const;
 
 export const Spacing = {
@@ -20,17 +24,22 @@ export const Spacing = {
 } as const;
 
 export const FontSize = {
-  xs: 12,
-  sm: 14,
-  md: 16,
+  xs: 10,
+  sm: 12,
+  md: 14,
+  base: 16,
   lg: 20,
   xl: 24,
-  xxl: 32,
+  xxl: 28,
+  xxxl: 32,
+  hero: 40,
+  display: 48,
 } as const;
 
 export const BorderRadius = {
   sm: 6,
   md: 10,
   lg: 16,
+  xl: 20,
   full: 9999,
 } as const;
