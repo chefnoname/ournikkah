@@ -1,98 +1,120 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+import { Card } from '@/components/Card';
+import { ScreenWrapper } from '@/components/ScreenWrapper';
+import { BorderRadius, Colors, FontSize, Spacing } from '@/constants/theme';
+import { useApi } from '@/hooks/useApi';
+import { useFavourites } from '@/hooks/useFavourites';
+import type { Item } from '@/types';
+import { useRouter } from 'expo-router';
+import { ActivityIndicator, FlatList, Image, StyleSheet, Text, View } from 'react-native';
 
 export default function HomeScreen() {
+  const { data: items, error, isLoading } = useApi<Item[]>('/products');
+  const router = useRouter();
+  const { isFavourite } = useFavourites();
+
+  if (isLoading) {
+    return (
+      <ScreenWrapper scrollable={false} style={styles.center}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </ScreenWrapper>
+    );
+  }
+
+  if (error) {
+    return (
+      <ScreenWrapper scrollable={false} style={styles.center}>
+        <Text style={styles.errorText}>Something went wrong</Text>
+        <Text style={styles.errorDetail}>{error}</Text>
+      </ScreenWrapper>
+    );
+  }
+
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+    <ScreenWrapper scrollable={false}>
+      <FlatList
+        data={items}
+        keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+        renderItem={({ item }) => (
+          <Card
+            onPress={() => router.push(`/items/${item.id}`)}
+            style={styles.card}
+          >
+            <View style={styles.row}>
+              <Image source={{ uri: item.image }} style={styles.image} />
+              <View style={styles.info}>
+                <Text style={styles.title} numberOfLines={2}>
+                  {item.title}
+                </Text>
+                <Text style={styles.price}>${item.price.toFixed(2)}</Text>
+                {isFavourite(item.id) && (
+                  <Text style={styles.savedBadge}>♥ Saved</Text>
+                )}
+              </View>
+            </View>
+          </Card>
+        )}
+      />
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  center: {
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  list: {
+    padding: Spacing.md,
+    gap: Spacing.sm,
+    paddingBottom: Spacing.xl,
+  },
+  card: {
+    marginBottom: Spacing.xs,
+  },
+  row: {
     flexDirection: 'row',
+    gap: Spacing.md,
   },
-  safeArea: {
+  image: {
+    width: 72,
+    height: 72,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: Colors.background,
+    resizeMode: 'contain',
+  },
+  info: {
     flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
     justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
   },
   title: {
+    fontSize: FontSize.md,
+    fontWeight: '600',
+    color: Colors.text,
+    marginBottom: Spacing.xs,
+  },
+  price: {
+    fontSize: FontSize.lg,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
+  savedBadge: {
+    fontSize: FontSize.xs,
+    color: Colors.success,
+    fontWeight: '600',
+    marginTop: Spacing.xs,
+  },
+  errorText: {
+    fontSize: FontSize.lg,
+    fontWeight: '600',
+    color: Colors.text,
+    marginBottom: Spacing.sm,
+  },
+  errorDetail: {
+    fontSize: FontSize.sm,
+    color: Colors.textSecondary,
     textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+    paddingHorizontal: Spacing.lg,
   },
 });
