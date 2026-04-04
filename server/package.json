@@ -1,0 +1,36 @@
+{
+  "name": "ournikkah-server",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "connect-pg-simple": "^10.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "drizzle-orm": "^0.44.2",
+    "express": "^5.1.0",
+    "express-session": "^1.18.1",
+    "postgres": "^3.4.7",
+    "zod": "^3.25.17"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/connect-pg-simple": "^7.0.3",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.2",
+    "@types/express-session": "^1.18.1",
+    "@types/node": "^22.15.21",
+    "drizzle-kit": "^0.31.4",
+    "tsx": "^4.19.4",
+    "typescript": "~5.9.2"
+  }
+}

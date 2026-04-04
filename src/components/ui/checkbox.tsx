@@ -17,7 +17,7 @@ interface CheckboxProps {
   labelStyle?: TextStyle;
 }
 
-const Checkbox = React.forwardRef<TouchableOpacity, CheckboxProps>(
+const Checkbox = React.forwardRef<View, CheckboxProps>(
   (
     { checked = false, disabled = false, onPress, label, style, labelStyle },
     ref

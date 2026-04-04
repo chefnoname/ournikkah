@@ -5,7 +5,7 @@ import { useWorkspace } from '@/lib/useWorkspace';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator, Alert,
     ScrollView,
@@ -13,6 +13,7 @@ import {
     Text, TextInput, TouchableOpacity,
     View
 } from 'react-native';
+import Animated, { FadeIn, FadeOut, SlideInLeft, SlideInRight, SlideOutLeft, SlideOutRight } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const CITIES = ['London', 'Birmingham', 'Manchester', 'Leeds', 'Bradford', 'Leicester', 'Sheffield', 'Glasgow', 'Other'];
@@ -34,6 +35,7 @@ export default function Onboarding() {
   const { workspaceId, saveOnboarding } = useWorkspace();
   const [screen, setScreen] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const directionRef = useRef<'forward' | 'back'>('forward');
   const [data, setData] = useState({
     userName: '',
     partnerName: '',
@@ -50,7 +52,17 @@ export default function Onboarding() {
   const [accountPassword, setAccountPassword] = useState('');
 
   const update = (field: string, value: any) => setData(prev => ({ ...prev, [field]: value }));
-  const goTo = (n: number) => setScreen(n);
+  const goTo = useCallback((n: number) => {
+    directionRef.current = n > screen ? 'forward' : 'back';
+    setScreen(n);
+  }, [screen]);
+
+  const entering = directionRef.current === 'forward'
+    ? SlideInRight.duration(350).withInitialValues({ opacity: 0 })
+    : SlideInLeft.duration(350).withInitialValues({ opacity: 0 });
+  const exiting = directionRef.current === 'forward'
+    ? SlideOutLeft.duration(250)
+    : SlideOutRight.duration(250);
 
   const daysUntil = useMemo(() => {
     if (!data.nikahDate) return null;
@@ -378,7 +390,14 @@ export default function Onboarding() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {renderScreen()}
+      <Animated.View
+        key={screen}
+        entering={screen === 1 ? FadeIn.duration(400) : entering}
+        exiting={screen === 1 ? FadeOut.duration(200) : exiting}
+        style={styles.animatedContainer}
+      >
+        {renderScreen()}
+      </Animated.View>
     </SafeAreaView>
   );
 }
@@ -387,6 +406,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+    overflow: 'hidden',
+  },
+  animatedContainer: {
+    flex: 1,
   },
   centered: {
     flex: 1,

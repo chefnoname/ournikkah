@@ -81,6 +81,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
     });
     if (!res.ok) throw new Error('Failed to start planning');
     const data = await res.json();

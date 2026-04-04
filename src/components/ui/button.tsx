@@ -5,6 +5,7 @@ import {
     Text,
     TextStyle,
     TouchableOpacity,
+    View,
     ViewStyle,
 } from 'react-native';
 
@@ -22,7 +23,7 @@ interface ButtonProps {
   textStyle?: TextStyle;
 }
 
-const Button = React.forwardRef<TouchableOpacity, ButtonProps>(
+const Button = React.forwardRef<View, ButtonProps>(
   (
     {
       variant = 'default',

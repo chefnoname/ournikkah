@@ -268,7 +268,7 @@ function NotesTab({ workspaceId }: { workspaceId: number }) {
   return (
     <TouchableOpacity
       style={styles.notesCard}
-      onPress={() => router.push({ pathname: '/notes/index', params: { workspaceId } })}
+      onPress={() => router.push({ pathname: '/notes', params: { workspaceId } })}
       activeOpacity={0.8}
     >
       <View style={styles.notesIcon}>

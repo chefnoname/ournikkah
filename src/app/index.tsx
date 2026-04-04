@@ -11,6 +11,7 @@ export default function Welcome() {
   const { startGuestSession, setWorkspaceId } = useWorkspace();
   const [isStarting, setIsStarting] = useState(false);
   const [checking, setChecking] = useState(true);
+  const [startError, setStartError] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -26,10 +27,16 @@ export default function Welcome() {
 
   const handleStartPlanning = async () => {
     setIsStarting(true);
+    setStartError(null);
     try {
       await startGuestSession();
       router.replace('/onboarding');
     } catch (e) {
+      if (e instanceof TypeError) {
+        setStartError('Could not connect to the server. Please check your connection and try again.');
+      } else {
+        setStartError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
+      }
       console.error('Failed to start planning:', e);
     } finally {
       setIsStarting(false);
@@ -73,6 +80,9 @@ export default function Welcome() {
           )}
         </TouchableOpacity>
 
+        {startError ? (
+          <Text style={styles.errorText}>{startError}</Text>
+        ) : null}
         <Text style={styles.noAccountText}>No account required to get started</Text>
       </View>
 
@@ -154,6 +164,12 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: FontSize.base,
     fontWeight: '600',
+  },
+  errorText: {
+    fontSize: FontSize.md,
+    color: Colors.error ?? '#E53E3E',
+    textAlign: 'center',
+    marginTop: Spacing.sm,
   },
   noAccountText: {
     fontSize: FontSize.md,
