@@ -22,6 +22,7 @@ const PORT = parseInt(process.env.PORT || '3000', 10);
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:8081',
   credentials: true,
+  allowedHeaders: ['Content-Type', 'X-Guest-Token'],
 }));
 
 app.use(express.json());

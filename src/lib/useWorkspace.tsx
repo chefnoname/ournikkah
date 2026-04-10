@@ -82,6 +82,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({}),
+      credentials: 'include',
     });
     if (!res.ok) throw new Error('Failed to start planning');
     const data = await res.json();

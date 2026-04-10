@@ -4,16 +4,19 @@ import { fetchWithAuth } from '@/lib/fetchWithAuth';
 import { useWorkspace } from '@/lib/useWorkspace';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-    ActivityIndicator, Alert,
-    ScrollView,
-    StyleSheet,
-    Text, TextInput, TouchableOpacity,
-    View
+  ActivityIndicator, Alert,
+  Dimensions,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text, TextInput, TouchableOpacity,
+  View
 } from 'react-native';
-import Animated, { FadeIn, FadeOut, SlideInLeft, SlideInRight, SlideOutLeft, SlideOutRight } from 'react-native-reanimated';
+import Animated, { Easing, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const CITIES = ['London', 'Birmingham', 'Manchester', 'Leeds', 'Bradford', 'Leicester', 'Sheffield', 'Glasgow', 'Other'];
@@ -24,18 +27,17 @@ const GUEST_RANGES = [
   { value: 'large', label: 'Large', range: '250–500' },
   { value: 'grand', label: 'Grand', range: '500+' },
 ];
-const CEREMONY_OPTIONS = [
-  { value: 'nikah_only', title: 'Nikah ceremony only', subtitle: 'Just the Nikah — intimate and sacred', icon: '🕌' },
-  { value: 'nikah_and_wedding', title: 'Nikah & Wedding celebration', subtitle: 'The ceremony and a full reception', icon: '💍' },
-  { value: 'not_sure', title: 'Not sure yet', subtitle: "We'll help you figure it out", icon: '✨' },
-];
+// const CEREMONY_OPTIONS = [
+//   { value: 'nikah_only', title: 'Nikah ceremony only', subtitle: 'Just the Nikah — intimate and sacred', icon: '🕌' },
+//   { value: 'nikah_and_wedding', title: 'Nikah & Wedding celebration', subtitle: 'The ceremony and a full reception', icon: '💍' },
+//   { value: 'not_sure', title: 'Not sure yet', subtitle: "We'll help you figure it out", icon: '✨' },
+// ];
 
 export default function Onboarding() {
   const router = useRouter();
   const { workspaceId, saveOnboarding } = useWorkspace();
   const [screen, setScreen] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const directionRef = useRef<'forward' | 'back'>('forward');
   const [data, setData] = useState({
     userName: '',
     partnerName: '',
@@ -52,17 +54,32 @@ export default function Onboarding() {
   const [accountPassword, setAccountPassword] = useState('');
 
   const update = (field: string, value: any) => setData(prev => ({ ...prev, [field]: value }));
-  const goTo = useCallback((n: number) => {
-    directionRef.current = n > screen ? 'forward' : 'back';
-    setScreen(n);
-  }, [screen]);
 
-  const entering = directionRef.current === 'forward'
-    ? SlideInRight.duration(350).withInitialValues({ opacity: 0 })
-    : SlideInLeft.duration(350).withInitialValues({ opacity: 0 });
-  const exiting = directionRef.current === 'forward'
-    ? SlideOutLeft.duration(250)
-    : SlideOutRight.duration(250);
+  const { width: SCREEN_WIDTH } = Dimensions.get('window');
+  const translateX = useSharedValue(0);
+  const opacity = useSharedValue(1);
+
+  const goTo = useCallback((n: number) => {
+    const isForward = n > screen;
+    // Slide out current screen
+    translateX.value = withTiming(isForward ? -SCREEN_WIDTH * 0.3 : SCREEN_WIDTH * 0.3, { duration: 200, easing: Easing.out(Easing.quad) });
+    opacity.value = withTiming(0, { duration: 200 }, () => {
+      // Once faded out, snap to entering position and slide in
+      translateX.value = isForward ? SCREEN_WIDTH * 0.3 : -SCREEN_WIDTH * 0.3;
+      runOnJS(setScreen)(n);
+    });
+  }, [screen, SCREEN_WIDTH, translateX, opacity]);
+
+  useEffect(() => {
+    // When screen changes, animate in
+    translateX.value = withTiming(0, { duration: 300, easing: Easing.out(Easing.quad) });
+    opacity.value = withTiming(1, { duration: 300 });
+  }, [screen, translateX, opacity]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+    opacity: opacity.value,
+  }));
 
   const daysUntil = useMemo(() => {
     if (!data.nikahDate) return null;
@@ -93,7 +110,7 @@ export default function Onboarding() {
     setIsSubmitting(true);
     try {
       await doSaveOnboarding();
-      goTo(10);
+      goTo(9);
     } catch {
       Alert.alert('Error', 'Something went wrong');
     } finally {
@@ -111,7 +128,7 @@ export default function Onboarding() {
       const inviteUrl = d.inviteUrl || `Share code: ${d.inviteCode}`;
       await Clipboard.setStringAsync(inviteUrl);
       Alert.alert('Invite link copied!', 'Share it with your partner or family.');
-      setTimeout(() => goTo(9), 500);
+      setTimeout(() => goTo(8), 500);
     } catch {
       Alert.alert('Error', 'Could not create invite');
     }
@@ -241,29 +258,32 @@ export default function Onboarding() {
           </ScrollView>
         );
 
-      case 5:
-        return (
-          <ScrollView contentContainerStyle={styles.screenContent}>
-            <BackButton />
-            <Logo />
-            <Text style={styles.screenTitle}>What are you planning?</Text>
-            <Text style={styles.screenDesc}>This helps us show you what's most relevant.</Text>
-            {CEREMONY_OPTIONS.map(opt => (
-              <OptionCard key={opt.value} selected={data.ceremonyType === opt.value} onPress={() => update('ceremonyType', opt.value)}>
-                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
-                  <Text style={{ fontSize: 24, marginTop: 2 }}>{opt.icon}</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.optionTitle}>{opt.title}</Text>
-                    <Text style={styles.optionSubtitle}>{opt.subtitle}</Text>
-                  </View>
-                </View>
-              </OptionCard>
-            ))}
-            <PrimaryBtn onPress={() => goTo(6)} disabled={!data.ceremonyType}>Continue →</PrimaryBtn>
-          </ScrollView>
-        );
+        // Redundant Question leaving here for now as it may be useful for future features 
+        // (e.g. showing relevant vendors based on ceremony type) and it's easier to ask now than to add later
 
-      case 6:
+      // case 5:
+      //   return (
+      //     <ScrollView contentContainerStyle={styles.screenContent}>
+      //       <BackButton />
+      //       <Logo />
+      //       <Text style={styles.screenTitle}>What are you planning?</Text>
+      //       <Text style={styles.screenDesc}>This helps us show you what's most relevant.</Text>
+      //       {CEREMONY_OPTIONS.map(opt => (
+      //         <OptionCard key={opt.value} selected={data.ceremonyType === opt.value} onPress={() => update('ceremonyType', opt.value)}>
+      //           <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+      //             <Text style={{ fontSize: 24, marginTop: 2 }}>{opt.icon}</Text>
+      //             <View style={{ flex: 1 }}>
+      //               <Text style={styles.optionTitle}>{opt.title}</Text>
+      //               <Text style={styles.optionSubtitle}>{opt.subtitle}</Text>
+      //             </View>
+      //           </View>
+      //         </OptionCard>
+      //       ))}
+      //       <PrimaryBtn onPress={() => goTo(6)} disabled={!data.ceremonyType}>Continue →</PrimaryBtn>
+      //     </ScrollView>
+      //   );
+
+      case 5:
         return (
           <ScrollView contentContainerStyle={styles.screenContent}>
             <BackButton />
@@ -292,13 +312,13 @@ export default function Onboarding() {
               />
             )}
             <PrimaryBtn
-              onPress={() => goTo(7)}
+              onPress={() => goTo(6)}
               disabled={!data.city || (data.city === 'Other' && !data.otherCity.trim())}
             >Continue →</PrimaryBtn>
           </ScrollView>
         );
 
-      case 7:
+      case 6:
         return (
           <ScrollView contentContainerStyle={styles.screenContent}>
             <BackButton />
@@ -313,11 +333,11 @@ export default function Onboarding() {
                 </View>
               </OptionCard>
             ))}
-            <PrimaryBtn onPress={() => goTo(8)} disabled={!data.guestRange}>Continue →</PrimaryBtn>
+            <PrimaryBtn onPress={() => goTo(7)} disabled={!data.guestRange}>Continue →</PrimaryBtn>
           </ScrollView>
         );
 
-      case 8:
+      case 7:
         return (
           <View style={styles.screenContent}>
             <BackButton />
@@ -327,13 +347,13 @@ export default function Onboarding() {
               Invite your partner, friend or relative to your Our Nikkah space.
             </Text>
             <PrimaryBtn onPress={handleSendInvite}>Invite to Our Nikkah</PrimaryBtn>
-            <TouchableOpacity onPress={() => goTo(9)}>
+            <TouchableOpacity onPress={() => goTo(8)}>
               <Text style={styles.skipText}>I'll do this later</Text>
             </TouchableOpacity>
           </View>
         );
 
-      case 9:
+      case 8:
         return (
           <ScrollView contentContainerStyle={styles.screenContent}>
             <Logo />
@@ -362,7 +382,7 @@ export default function Onboarding() {
           </ScrollView>
         );
 
-      case 10:
+      case 9:
         return (
           <View style={styles.centered}>
             <View style={styles.sparkleCircle}>
@@ -389,24 +409,30 @@ export default function Onboarding() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Animated.View
-        key={screen}
-        entering={screen === 1 ? FadeIn.duration(400) : entering}
-        exiting={screen === 1 ? FadeOut.duration(200) : exiting}
-        style={styles.animatedContainer}
-      >
-        {renderScreen()}
-      </Animated.View>
-    </SafeAreaView>
+    <LinearGradient
+      colors={['rgba(238,174,202,1)', 'rgba(148,187,233,1)']}
+      start={{ x: 0.5, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={styles.gradient}
+    >
+      <SafeAreaView style={styles.container}>
+        <Animated.View
+          style={[styles.animatedContainer, animatedStyle]}
+        >
+          {renderScreen()}
+        </Animated.View>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
     overflow: 'hidden',
+  },
+  gradient: {
+    flex: 1,
   },
   animatedContainer: {
     flex: 1,
@@ -468,10 +494,10 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xxl,
     fontWeight: '700',
     color: Colors.text,
-    borderBottomWidth: 2,
-    borderBottomColor: Colors.gold,
+    borderWidth: 0,
     paddingBottom: Spacing.sm,
     marginVertical: Spacing.md,
+    ...Platform.select({ web: { outlineStyle: 'none' as any } }),
   },
   dateInput: {
     borderRadius: BorderRadius.xl,
