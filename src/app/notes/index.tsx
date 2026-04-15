@@ -1,9 +1,10 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { FontFamily } from '@/constants/theme';
+import { FontFamily, GradientConfig } from '@/constants/theme';
 import type { Note } from '@/lib/types';
 import { useNotes } from '@/lib/useNotes';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -102,78 +103,84 @@ export default function NotesListScreen() {
 
   if (isLoading && !notes) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.centerContent}>
-          <ActivityIndicator size="large" />
-          <Text style={styles.loadingText}>Loading notes...</Text>
-        </View>
-      </SafeAreaView>
+      <LinearGradient {...GradientConfig} style={{ flex: 1 }}>
+        <SafeAreaView style={styles.container}>
+          <View style={styles.centerContent}>
+            <ActivityIndicator size="large" />
+            <Text style={styles.loadingText}>Loading notes...</Text>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
     );
   }
 
   if (error) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.centerContent}>
-          <Text style={styles.errorText}>Error: {error.message}</Text>
-          <Button
-            onPress={handleRefresh}
-            style={styles.retryButton}
-          >
-            Retry
-          </Button>
-        </View>
-      </SafeAreaView>
+      <LinearGradient {...GradientConfig} style={{ flex: 1 }}>
+        <SafeAreaView style={styles.container}>
+          <View style={styles.centerContent}>
+            <Text style={styles.errorText}>Error: {error.message}</Text>
+            <Button
+              onPress={handleRefresh}
+              style={styles.retryButton}
+            >
+              Retry
+            </Button>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
     );
   }
 
   const isEmpty = !notes || notes.length === 0;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Notes</Text>
-        <Button
-          variant="default"
-          size="sm"
-          onPress={handleCreateNote}
-        >
-          New Note
-        </Button>
-      </View>
-
-      <Separator />
-
-      {isEmpty ? (
-        <View style={styles.centerContent}>
-          <Text style={styles.emptyText}>No notes yet</Text>
-          <Text style={styles.emptySubtext}>Create your first note to get started</Text>
+    <LinearGradient {...GradientConfig} style={{ flex: 1 }}>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Notes</Text>
           <Button
+            variant="default"
+            size="sm"
             onPress={handleCreateNote}
-            style={styles.createButton}
           >
-            Create Note
+            New Note
           </Button>
         </View>
-      ) : (
-        <FlatList
-          data={notes}
-          renderItem={renderNoteItem}
-          keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={styles.listContent}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-          }
-        />
-      )}
-    </SafeAreaView>
+
+        <Separator />
+
+        {isEmpty ? (
+          <View style={styles.centerContent}>
+            <Text style={styles.emptyText}>No notes yet</Text>
+            <Text style={styles.emptySubtext}>Create your first note to get started</Text>
+            <Button
+              onPress={handleCreateNote}
+              style={styles.createButton}
+            >
+              Create Note
+            </Button>
+          </View>
+        ) : (
+          <FlatList
+            data={notes}
+            renderItem={renderNoteItem}
+            keyExtractor={(item) => item.id.toString()}
+            contentContainerStyle={styles.listContent}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+            }
+          />
+        )}
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent',
   },
   header: {
     flexDirection: 'row',

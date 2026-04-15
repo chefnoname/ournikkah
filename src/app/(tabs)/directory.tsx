@@ -1,9 +1,10 @@
-import { BorderRadius, Colors, FontFamily, FontSize, Spacing } from '@/constants/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, GradientConfig, Spacing } from '@/constants/theme';
 import { api, buildUrl, toAbsoluteUrl } from '@/lib/api';
 import { fetchWithAuth } from '@/lib/fetchWithAuth';
 import type { SavedVendor, VendorItem } from '@/lib/types';
 import { useWorkspace } from '@/lib/useWorkspace';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -162,7 +163,8 @@ export default function DirectoryTab() {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <LinearGradient {...GradientConfig} style={{ flex: 1 }}>
+      <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.headerSection}>
         <Text style={styles.pageTitle}>Vendors & Venues</Text>
         <Text style={styles.pageSubtitle}>Browse trusted professionals for your special day</Text>
@@ -321,11 +323,12 @@ export default function DirectoryTab() {
         )}
       </Modal>
     </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1, backgroundColor: 'transparent', borderTopWidth: 1, borderColor: 'green' },
   headerSection: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, gap: Spacing.sm },
   pageTitle: { fontSize: FontSize.xxxl, fontFamily: FontFamily.serifBold, color: Colors.text, letterSpacing: -0.5 },
   pageSubtitle: { fontSize: FontSize.md, fontFamily: FontFamily.sans, color: Colors.textSecondary },

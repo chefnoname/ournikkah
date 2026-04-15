@@ -2,8 +2,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
+import { GradientConfig } from '@/constants/theme';
 import { useNotes } from '@/lib/useNotes';
 import { validateNote } from '@/lib/validation';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -53,68 +55,70 @@ export default function NoteCreateScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>New Note</Text>
-        </View>
+    <LinearGradient {...GradientConfig} style={{ flex: 1 }}>
+      <SafeAreaView style={styles.container}>
+        <ScrollView style={styles.content}>
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>New Note</Text>
+          </View>
 
-        <Separator />
+          <Separator />
 
-        <View style={styles.form}>
-          {error && (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{error}</Text>
+          <View style={styles.form}>
+            {error && (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            )}
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Title</Text>
+              <Input
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Enter note title"
+                editable={!isCreating}
+              />
             </View>
-          )}
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Title</Text>
-            <Input
-              value={title}
-              onChangeText={setTitle}
-              placeholder="Enter note title"
-              editable={!isCreating}
-            />
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Content</Text>
+              <Textarea
+                value={content}
+                onChangeText={setContent}
+                placeholder="Write your note here..."
+                editable={!isCreating}
+                style={styles.textarea}
+              />
+            </View>
           </View>
+        </ScrollView>
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Content</Text>
-            <Textarea
-              value={content}
-              onChangeText={setContent}
-              placeholder="Write your note here..."
-              editable={!isCreating}
-              style={styles.textarea}
-            />
-          </View>
+        <View style={styles.footer}>
+          <Button
+            variant="outline"
+            onPress={() => router.back()}
+            disabled={isCreating}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="default"
+            onPress={handleCreate}
+            disabled={isCreating}
+          >
+            {isCreating ? 'Creating...' : 'Create Note'}
+          </Button>
         </View>
-      </ScrollView>
-
-      <View style={styles.footer}>
-        <Button
-          variant="outline"
-          onPress={() => router.back()}
-          disabled={isCreating}
-        >
-          Cancel
-        </Button>
-        <Button
-          variant="default"
-          onPress={handleCreate}
-          disabled={isCreating}
-        >
-          {isCreating ? 'Creating...' : 'Create Note'}
-        </Button>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent',
   },
   content: {
     flex: 1,

@@ -1,20 +1,23 @@
-import { BorderRadius, Colors, FontFamily, FontSize, Spacing } from '@/constants/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, GradientConfig, Spacing } from '@/constants/theme';
 import { api, buildUrl, toAbsoluteUrl } from '@/lib/api';
 import { fetchWithAuth } from '@/lib/fetchWithAuth';
 import type { BudgetItem, GuestInvite, SavedVendor } from '@/lib/types';
 import { useWorkspace } from '@/lib/useWorkspace';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator, Alert,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text, TextInput, TouchableOpacity,
-  View
+    ActivityIndicator, Alert,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text, TextInput, TouchableOpacity,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Circle, G } from 'react-native-svg';
+import Slider from '@react-native-community/slider';
 
 type SavedVendorWithItem = SavedVendor & { vendorItem?: any };
 
@@ -28,11 +31,95 @@ const STATUS_OPTIONS = [
 
 const BUDGET_CATEGORIES = ['Venue', 'Catering', 'Officiant', 'Invitations', 'Attire', 'Other'];
 
+const CATEGORY_COLORS: Record<string, string> = {
+  Venue: '#C9A96E',
+  Catering: '#E8C4B8',
+  Officiant: '#7AACB3',
+  Invitations: '#D4A5D0',
+  Attire: '#8BB58E',
+  Other: '#E0B86B',
+};
+
+function getCategoryColor(category: string) {
+  return CATEGORY_COLORS[category] || `hsl(${Math.abs(category.split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 360}, 55%, 60%)`;
+}
+
+function DonutChart({
+  items,
+  totalBudget,
+  size = 200,
+  strokeWidth = 28,
+}: {
+  items: { category: string; amount: number }[];
+  totalBudget: number;
+  size?: number;
+  strokeWidth?: number;
+}) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const center = size / 2;
+  const totalAllocated = items.reduce((s, i) => s + i.amount, 0);
+
+  const segments: { color: string; offset: number; length: number; category: string }[] = [];
+  let accumulated = 0;
+  for (const item of items) {
+    if (item.amount <= 0 || totalBudget <= 0) continue;
+    const fraction = item.amount / totalBudget;
+    const length = fraction * circumference;
+    const offset = circumference - accumulated * circumference / totalBudget;
+    segments.push({ color: getCategoryColor(item.category), offset, length, category: item.category });
+    accumulated += item.amount;
+  }
+
+  const remainingFraction = totalBudget > 0 ? Math.max(0, (totalBudget - totalAllocated) / totalBudget) : 1;
+
+  return (
+    <View style={{ alignItems: 'center' }}>
+      <Svg width={size} height={size}>
+        <G rotation="-90" origin={`${center}, ${center}`}>
+          {/* Background ring */}
+          <Circle
+            cx={center}
+            cy={center}
+            r={radius}
+            stroke="#F3F4F6"
+            strokeWidth={strokeWidth}
+            fill="none"
+          />
+          {/* Category segments */}
+          {segments.map((seg, i) => (
+            <Circle
+              key={`${seg.category}-${i}`}
+              cx={center}
+              cy={center}
+              r={radius}
+              stroke={seg.color}
+              strokeWidth={strokeWidth}
+              fill="none"
+              strokeDasharray={`${seg.length} ${circumference - seg.length}`}
+              strokeDashoffset={seg.offset}
+              strokeLinecap="butt"
+            />
+          ))}
+        </G>
+      </Svg>
+      {/* Center text */}
+      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ fontSize: FontSize.md, fontFamily: FontFamily.sans, color: Colors.textSecondary }}>
+          {totalBudget > 0 ? `${Math.round((1 - remainingFraction) * 100)}%` : '0%'}
+        </Text>
+        <Text style={{ fontSize: FontSize.xs, fontFamily: FontFamily.sans, color: Colors.textSecondary }}>allocated</Text>
+      </View>
+    </View>
+  );
+}
+
 // --- Saved Tab ---
-function SavedTab({ workspaceId }: { workspaceId: number }) {
+function SavedTab({ workspaceId, refreshKey }: { workspaceId: number; refreshKey: number }) {
   const [vendors, setVendors] = useState<SavedVendorWithItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusModal, setStatusModal] = useState<SavedVendorWithItem | null>(null);
+  const [detailItem, setDetailItem] = useState<SavedVendorWithItem | null>(null);
 
   const fetch_ = useCallback(async () => {
     try {
@@ -43,7 +130,7 @@ function SavedTab({ workspaceId }: { workspaceId: number }) {
     setLoading(false);
   }, [workspaceId]);
 
-  useEffect(() => { fetch_(); }, []);
+  useEffect(() => { fetch_(); }, [refreshKey]);
 
   const updateStatus = async (vendorItemId: number, contactStatus: string) => {
     try {
@@ -69,11 +156,11 @@ function SavedTab({ workspaceId }: { workspaceId: number }) {
 
   return (
     <>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16, paddingVertical: 4 }}>
+      <View style={styles.savedGrid}>
         {vendors.map(sv => {
           const current = STATUS_OPTIONS.find(s => s.value === (sv.contactStatus || 'saved')) || STATUS_OPTIONS[0];
           return (
-            <View key={sv.id} style={styles.savedCard}>
+            <TouchableOpacity key={sv.id} style={styles.savedCard} onPress={() => setDetailItem(sv)} activeOpacity={0.8}>
               <View style={styles.savedCardImage}>
                 <Text style={styles.savedCardInitial}>{sv.vendorItem?.title?.charAt(0) || '?'}</Text>
               </View>
@@ -84,10 +171,10 @@ function SavedTab({ workspaceId }: { workspaceId: number }) {
               >
                 <Text style={[styles.statusPillText, { color: current.fg }]}>{current.label}</Text>
               </TouchableOpacity>
-            </View>
+            </TouchableOpacity>
           );
         })}
-      </ScrollView>
+      </View>
 
       <Modal visible={!!statusModal} transparent animationType="fade">
         <TouchableOpacity style={styles.modalOverlay} onPress={() => setStatusModal(null)} activeOpacity={1}>
@@ -107,37 +194,210 @@ function SavedTab({ workspaceId }: { workspaceId: number }) {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      <Modal visible={!!detailItem} animationType="slide" presentationStyle="pageSheet">
+        {detailItem && (
+          <SafeAreaView style={styles.detailModalContainer}>
+            <ScrollView contentContainerStyle={styles.detailModalScroll}>
+              <TouchableOpacity style={styles.detailModalBackBtn} onPress={() => setDetailItem(null)}>
+                <Ionicons name="chevron-back" size={24} color={Colors.text} />
+              </TouchableOpacity>
+
+              {detailItem.vendorItem?.section === 'venue' ? (
+                <View style={styles.detailModalImagePlaceholder}>
+                  <Ionicons name="business" size={48} color={Colors.gold} />
+                </View>
+              ) : (
+                <View style={styles.detailModalAvatarWrap}>
+                  <View style={styles.detailModalAvatar}>
+                    <Text style={styles.detailModalAvatarText}>{detailItem.vendorItem?.title?.charAt(0) || '?'}</Text>
+                  </View>
+                </View>
+              )}
+
+              <View style={styles.detailModalBody}>
+                <Text style={styles.detailModalTitle}>{detailItem.vendorItem?.title}</Text>
+                <View style={styles.detailModalMetaRow}>
+                  {detailItem.vendorItem?.vendorCategory && (
+                    <View style={styles.detailCatBadge}>
+                      <Text style={styles.detailCatBadgeText}>
+                        {detailItem.vendorItem.vendorCategory === 'mua' ? 'MUA' : detailItem.vendorItem.vendorCategory.charAt(0).toUpperCase() + detailItem.vendorItem.vendorCategory.slice(1)}
+                      </Text>
+                    </View>
+                  )}
+                  {detailItem.vendorItem?.priceRange && (
+                    <View style={styles.detailPriceBadge}><Text style={styles.detailPriceBadgeText}>{detailItem.vendorItem.priceRange}</Text></View>
+                  )}
+                  {detailItem.vendorItem?.location && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Ionicons name="location-outline" size={14} color={Colors.textSecondary} />
+                      <Text style={styles.detailLocationText}>{detailItem.vendorItem.location}</Text>
+                    </View>
+                  )}
+                </View>
+
+                {detailItem.vendorItem?.bio && (
+                  <View style={styles.detailSection}>
+                    <Text style={styles.detailSectionLabel}>ABOUT</Text>
+                    <Text style={styles.detailSectionText}>{detailItem.vendorItem.bio}</Text>
+                  </View>
+                )}
+
+                {detailItem.vendorItem?.capacity && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 16 }}>
+                    <Ionicons name="people" size={16} color={Colors.gold} />
+                    <Text style={styles.detailSectionText}>Capacity: {detailItem.vendorItem.capacity}</Text>
+                  </View>
+                )}
+
+                {detailItem.vendorItem?.contactEmail && (
+                  <View style={styles.detailSection}>
+                    <Text style={styles.detailSectionLabel}>CONTACT</Text>
+                    <View style={styles.detailContactRow}>
+                      <Ionicons name="mail" size={16} color={Colors.gold} />
+                      <Text style={styles.detailContactText}>{detailItem.vendorItem.contactEmail}</Text>
+                    </View>
+                    {detailItem.vendorItem?.contactPhone && (
+                      <View style={styles.detailContactRow}>
+                        <Ionicons name="call" size={16} color={Colors.gold} />
+                        <Text style={styles.detailContactText}>{detailItem.vendorItem.contactPhone}</Text>
+                      </View>
+                    )}
+                  </View>
+                )}
+              </View>
+            </ScrollView>
+
+            <View style={styles.detailModalFooter}>
+              {(() => {
+                const current = STATUS_OPTIONS.find(s => s.value === (detailItem.contactStatus || 'saved')) || STATUS_OPTIONS[0];
+                return (
+                  <TouchableOpacity
+                    style={[styles.detailStatusBtn, { backgroundColor: current.bg }]}
+                    onPress={() => { setDetailItem(null); setStatusModal(detailItem); }}
+                  >
+                    <Ionicons name="flag-outline" size={18} color={current.fg} />
+                    <Text style={[styles.detailStatusBtnText, { color: current.fg }]}>{current.label} — Tap to update</Text>
+                  </TouchableOpacity>
+                );
+              })()}
+            </View>
+          </SafeAreaView>
+        )}
+      </Modal>
     </>
   );
 }
 
+// --- Budget Slider Row (always visible, inline X to delete) ---
+function BudgetSliderRow({
+  item,
+  maxValue,
+  localValue,
+  onSliderChange,
+  onDelete,
+}: {
+  item: BudgetItem;
+  maxValue: number;
+  localValue: number | undefined;
+  onSliderChange: (itemId: number, value: number) => void;
+  onDelete: (itemId: number) => void;
+}) {
+  const color = getCategoryColor(item.category);
+  const step = Math.max(50, Math.round(maxValue / 100 / 50) * 50);
+
+  // Internal state keeps the native slider thumb stable during gestures.
+  // Only sync from parent when NOT actively dragging.
+  const dragging = useRef(false);
+  const [internalValue, setInternalValue] = useState(localValue ?? safeNum(item.amount));
+
+  useEffect(() => {
+    if (!dragging.current) {
+      setInternalValue(localValue ?? safeNum(item.amount));
+    }
+  }, [localValue, item.amount]);
+
+  return (
+    <View style={styles.budgetRow}>
+      <View style={styles.budgetRowHeader}>
+        <Text style={styles.budgetCatName}>{item.category}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <Text style={styles.budgetAmountText}>£{internalValue.toLocaleString()}</Text>
+          <TouchableOpacity onPress={() => onDelete(item.id)} hitSlop={8}>
+            <Ionicons name="close" size={18} color={Colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
+      </View>
+      <Slider
+        style={styles.slider}
+        minimumValue={0}
+        maximumValue={maxValue}
+        step={step}
+        value={internalValue}
+        onSlidingStart={() => { dragging.current = true; }}
+        onValueChange={(v: number) => {
+          const safe = safeNum(v);
+          setInternalValue(safe);
+          onSliderChange(item.id, safe);
+        }}
+        onSlidingComplete={() => { dragging.current = false; }}
+        minimumTrackTintColor={color}
+        maximumTrackTintColor="#F3F4F6"
+        thumbTintColor={color}
+      />
+    </View>
+  );
+}
+
+/** Guarantee a finite number — any junk becomes 0 */
+function safeNum(v: unknown): number {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
 // --- Budget Tab ---
 function BudgetTab({ workspaceId }: { workspaceId: number }) {
-  const { workspace } = useWorkspace();
+  const { workspace, fetchWorkspace } = useWorkspace();
   const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [budgetInput, setBudgetInput] = useState('');
   const [customCat, setCustomCat] = useState('');
   const [showCustom, setShowCustom] = useState(false);
+  const [editingBudget, setEditingBudget] = useState(false);
+  const [budgetInput, setBudgetInput] = useState('');
+  const [localSliders, setLocalSliders] = useState<Record<number, number>>({});
+  const debounceTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
 
-  const fetch_ = useCallback(async () => {
+  const fetchItems = useCallback(async () => {
     try {
       const url = toAbsoluteUrl(buildUrl(api.budget.list.path, { id: workspaceId }));
       const res = await fetchWithAuth(url);
-      if (res.ok) setBudgetItems(await res.json());
+      if (res.ok) {
+        const items: BudgetItem[] = await res.json();
+        // Ensure every item has a numeric amount
+        setBudgetItems(items.map(i => ({ ...i, amount: safeNum(i.amount) })));
+      }
     } catch (e) { console.error(e); }
     setLoading(false);
   }, [workspaceId]);
 
-  useEffect(() => { fetch_(); }, []);
+  useEffect(() => { fetchItems(); }, []);
+
+  // Cleanup debounce timers on unmount
+  useEffect(() => {
+    const timers = debounceTimers.current;
+    return () => { Object.values(timers).forEach(clearTimeout); };
+  }, []);
 
   const totalBudget = workspace?.totalBudget || 0;
-  const totalSpent = budgetItems.reduce((s, i) => s + i.amount, 0);
+  const totalSpent = budgetItems.reduce(
+    (sum, item) => sum + (localSliders[item.id] ?? safeNum(item.amount)),
+    0
+  );
   const remaining = totalBudget - totalSpent;
 
   const saveTotalBudget = async () => {
     const val = parseInt(budgetInput);
-    if (isNaN(val) || val <= 0) return;
+    if (isNaN(val) || val <= 0) { setBudgetInput(''); setEditingBudget(false); return; }
     try {
       const url = toAbsoluteUrl(buildUrl(api.workspaces.settings.path, { id: workspaceId }));
       await fetchWithAuth(url, {
@@ -145,8 +405,17 @@ function BudgetTab({ workspaceId }: { workspaceId: number }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ totalBudget: val }),
       });
+      // Delete all categories when budget changes
+      for (const item of budgetItems) {
+        const itemUrl = toAbsoluteUrl(buildUrl(api.budget.delete.path, { id: workspaceId, itemId: item.id }));
+        await fetchWithAuth(itemUrl, { method: 'DELETE' });
+      }
+      await fetchWorkspace();
+      await fetchItems();
+      setLocalSliders({});
     } catch { }
     setBudgetInput('');
+    setEditingBudget(false);
   };
 
   const addCategory = async (cat: string) => {
@@ -157,60 +426,149 @@ function BudgetTab({ workspaceId }: { workspaceId: number }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ category: cat, amount: 0 }),
       });
-      fetch_();
+      await fetchItems();
     } catch { }
     setCustomCat('');
     setShowCustom(false);
   };
 
-  const deleteItem = async (itemId: number) => {
+  const handleSliderChange = useCallback((itemId: number, value: number) => {
+    const safe = safeNum(value);
+    setLocalSliders(prev => ({ ...prev, [itemId]: safe }));
+
+    if (debounceTimers.current[itemId]) clearTimeout(debounceTimers.current[itemId]);
+
+    debounceTimers.current[itemId] = setTimeout(async () => {
+      try {
+        const url = toAbsoluteUrl(buildUrl(api.budget.update.path, { id: workspaceId, itemId }));
+        await fetchWithAuth(url, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: safe }),
+        });
+        // Update the server-state array in place instead of re-fetching,
+        // so other sliders that are mid-drag don't get disrupted.
+        setBudgetItems(prev => prev.map(i => i.id === itemId ? { ...i, amount: safe } : i));
+        setLocalSliders(prev => {
+          const next = { ...prev };
+          delete next[itemId];
+          return next;
+        });
+      } catch (e) { console.error(e); }
+    }, 300);
+  }, [workspaceId]);
+
+  const deleteItem = useCallback(async (itemId: number) => {
     try {
       const url = toAbsoluteUrl(buildUrl(api.budget.delete.path, { id: workspaceId, itemId }));
       await fetchWithAuth(url, { method: 'DELETE' });
-      fetch_();
+      await fetchItems();
     } catch { }
-  };
+  }, [workspaceId, fetchItems]);
 
   if (loading) return <ActivityIndicator style={{ marginTop: 40 }} color={Colors.gold} />;
 
   const existingCats = budgetItems.map(i => i.category.toLowerCase());
   const missing = BUDGET_CATEGORIES.filter(c => !existingCats.includes(c.toLowerCase()));
 
+  const chartItems = budgetItems.map(i => ({
+    category: i.category,
+    amount: localSliders[i.id] ?? safeNum(i.amount),
+  }));
+
+  const sliderMax = totalBudget > 0 ? totalBudget : 50000;
+
   return (
     <View style={styles.budgetCard}>
-      <Text style={styles.budgetLabel}>What is your total budget?</Text>
-      <View style={styles.budgetInputRow}>
-        <Text style={styles.currencySign}>£</Text>
-        <TextInput
-          style={styles.budgetInput}
-          placeholder="e.g. 15000"
-          placeholderTextColor={Colors.textSecondary}
-          value={budgetInput || (totalBudget > 0 ? String(totalBudget) : '')}
-          onChangeText={setBudgetInput}
-          onBlur={saveTotalBudget}
-          keyboardType="number-pad"
-        />
-      </View>
-
-      {totalBudget > 0 && (
-        <View style={styles.remainingSection}>
-          <Text style={styles.remainingAmount}>£{remaining.toLocaleString()}</Text>
-          <Text style={styles.remainingLabel}>Remaining</Text>
+      {/* Budget display / edit */}
+      {!editingBudget && totalBudget > 0 ? (
+        <View>
+          <Text style={styles.budgetLabel}>Total Budget</Text>
+          <View style={styles.budgetDisplayRow}>
+            <Text style={styles.budgetDisplayAmount}>£{totalBudget.toLocaleString()}</Text>
+            <TouchableOpacity
+              style={styles.budgetEditBtn}
+              onPress={() => { setEditingBudget(true); setBudgetInput(String(totalBudget)); }}
+            >
+              <Ionicons name="pencil" size={14} color={Colors.gold} />
+              <Text style={styles.budgetEditBtnText}>Change</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : (
+        <View>
+          <Text style={styles.budgetLabel}>
+            {totalBudget > 0 ? 'Enter new budget' : 'What is your total budget?'}
+          </Text>
+          <View style={styles.budgetInputRow}>
+            <Text style={styles.currencySign}>£</Text>
+            <TextInput
+              style={styles.budgetInput}
+              placeholder="e.g. 15000"
+              placeholderTextColor={Colors.textSecondary}
+              value={budgetInput}
+              onChangeText={setBudgetInput}
+              keyboardType="number-pad"
+              autoFocus={editingBudget}
+            />
+          </View>
+          <View style={styles.budgetConfirmRow}>
+            <TouchableOpacity style={styles.budgetConfirmBtn} onPress={saveTotalBudget}>
+              <Text style={styles.budgetConfirmBtnText}>Confirm</Text>
+            </TouchableOpacity>
+            {totalBudget > 0 && (
+              <TouchableOpacity
+                style={styles.budgetCancelBtn}
+                onPress={() => { setEditingBudget(false); setBudgetInput(''); }}
+              >
+                <Text style={styles.budgetCancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       )}
 
-      {budgetItems.map(item => (
-        <View key={item.id} style={styles.budgetRow}>
-          <View style={styles.budgetRowHeader}>
-            <Text style={styles.budgetCatName}>{item.category}</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Text style={styles.budgetAmountText}>£{item.amount.toLocaleString()}</Text>
-              <TouchableOpacity onPress={() => deleteItem(item.id)}>
-                <Ionicons name="close" size={14} color={Colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
+      {totalBudget > 0 && (
+        <>
+          {/* Donut Chart */}
+          <View style={styles.donutSection}>
+            <DonutChart items={chartItems} totalBudget={totalBudget} />
           </View>
-        </View>
+
+          {/* Remaining */}
+          <View style={styles.remainingSection}>
+            <Text style={[styles.remainingAmount, remaining < 0 && { color: Colors.error }]}>
+              £{Math.abs(remaining).toLocaleString()}
+            </Text>
+            <Text style={styles.remainingLabel}>
+              {remaining < 0 ? 'Over Budget' : 'Remaining'}
+            </Text>
+          </View>
+
+          {/* Legend */}
+          {budgetItems.length > 0 && (
+            <View style={styles.legendRow}>
+              {budgetItems.map(item => (
+                <View key={item.id} style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: getCategoryColor(item.category) }]} />
+                  <Text style={styles.legendText}>{item.category}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </>
+      )}
+
+      {/* Category sliders */}
+      {budgetItems.map(item => (
+        <BudgetSliderRow
+          key={item.id}
+          item={item}
+          maxValue={sliderMax}
+          localValue={localSliders[item.id]}
+          onSliderChange={handleSliderChange}
+          onDelete={deleteItem}
+        />
       ))}
 
       {(missing.length > 0 || budgetItems.length === 0) && (
@@ -419,6 +777,11 @@ function InvitesTab({ workspaceId }: { workspaceId: number }) {
 export default function HubTab() {
   const { workspaceId } = useWorkspace();
   const [activeTab, setActiveTab] = useState('saved');
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useFocusEffect(useCallback(() => {
+    setRefreshKey(k => k + 1);
+  }, []));
 
   const tabs = [
     { value: 'saved', label: 'Saved' },
@@ -430,33 +793,35 @@ export default function HubTab() {
   if (!workspaceId) return null;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.hubScroll}>
-        <Text style={styles.hubTitle}>Hub</Text>
+    <LinearGradient {...GradientConfig} style={{ flex: 1 }}>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <ScrollView contentContainerStyle={styles.hubScroll}>
+          <Text style={styles.hubTitle}>Hub</Text>
 
-        <View style={styles.hubTabRow}>
-          {tabs.map(tab => (
-            <TouchableOpacity
-              key={tab.value}
-              style={[styles.hubTab, activeTab === tab.value && styles.hubTabActive]}
-              onPress={() => setActiveTab(tab.value)}
-            >
-              <Text style={[styles.hubTabText, activeTab === tab.value && styles.hubTabTextActive]}>{tab.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+          <View style={styles.hubTabRow}>
+            {tabs.map(tab => (
+              <TouchableOpacity
+                key={tab.value}
+                style={[styles.hubTab, activeTab === tab.value && styles.hubTabActive]}
+                onPress={() => setActiveTab(tab.value)}
+              >
+                <Text style={[styles.hubTabText, activeTab === tab.value && styles.hubTabTextActive]}>{tab.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
-        {activeTab === 'saved' && <SavedTab workspaceId={workspaceId} />}
-        {activeTab === 'budget' && <BudgetTab workspaceId={workspaceId} />}
-        {activeTab === 'notes' && <NotesTab workspaceId={workspaceId} />}
-        {activeTab === 'invites' && <InvitesTab workspaceId={workspaceId} />}
-      </ScrollView>
-    </SafeAreaView>
+          {activeTab === 'saved' && <SavedTab workspaceId={workspaceId} refreshKey={refreshKey} />}
+          {activeTab === 'budget' && <BudgetTab workspaceId={workspaceId} />}
+          {activeTab === 'notes' && <NotesTab workspaceId={workspaceId} />}
+          {activeTab === 'invites' && <InvitesTab workspaceId={workspaceId} />}
+        </ScrollView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1, backgroundColor: 'transparent' },
   hubScroll: { padding: Spacing.lg, paddingBottom: 120, gap: Spacing.lg },
   hubTitle: { fontSize: FontSize.xxxl, fontFamily: FontFamily.serifBold, color: Colors.text, letterSpacing: -0.5 },
   hubTabRow: { flexDirection: 'row', gap: 8 },
@@ -465,7 +830,8 @@ const styles = StyleSheet.create({
   hubTabText: { fontSize: FontSize.md, fontFamily: FontFamily.sansMedium, color: Colors.textSecondary },
   hubTabTextActive: { color: '#fff' },
   // Saved
-  savedCard: { width: 160, backgroundColor: Colors.surface, borderRadius: BorderRadius.xl, padding: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12 },
+  savedGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  savedCard: { width: '48%', backgroundColor: Colors.surface, borderRadius: BorderRadius.xl, padding: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12 },
   savedCardImage: { height: 96, borderRadius: 12, backgroundColor: Colors.goldLight, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
   savedCardInitial: { fontSize: 24, fontWeight: '700', color: Colors.gold },
   savedCardTitle: { fontSize: FontSize.md, fontFamily: FontFamily.sansSemiBold, color: Colors.text, marginBottom: 8 },
@@ -483,13 +849,37 @@ const styles = StyleSheet.create({
   budgetInputRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.background, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(26,26,26,0.1)' },
   currencySign: { paddingLeft: 16, fontSize: FontSize.base, fontWeight: '500', color: Colors.textSecondary },
   budgetInput: { flex: 1, paddingHorizontal: 8, paddingVertical: 14, fontSize: FontSize.lg, fontFamily: FontFamily.sansSemiBold, color: Colors.text },
-  remainingSection: { alignItems: 'center', marginTop: 24 },
+  budgetDisplayRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  budgetDisplayAmount: { fontSize: FontSize.xxxl, fontFamily: FontFamily.serifBold, color: Colors.text },
+  budgetEditBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: BorderRadius.full, backgroundColor: Colors.goldLight },
+  budgetEditBtnText: { fontSize: FontSize.xs, fontFamily: FontFamily.sansMedium, color: Colors.gold },
+  budgetConfirmRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
+  budgetConfirmBtn: { flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: BorderRadius.full, backgroundColor: Colors.primary },
+  budgetConfirmBtnText: { color: '#fff', fontSize: FontSize.md, fontFamily: FontFamily.sansSemiBold },
+  budgetCancelBtn: { flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: BorderRadius.full, backgroundColor: Colors.background, borderWidth: 1, borderColor: 'rgba(26,26,26,0.1)' },
+  budgetCancelBtnText: { color: Colors.textSecondary, fontSize: FontSize.md, fontFamily: FontFamily.sansMedium },
+  remainingSection: { alignItems: 'center', marginTop: 8 },
   remainingAmount: { fontSize: FontSize.xxxl, fontFamily: FontFamily.serifBold, color: Colors.text },
   remainingLabel: { fontSize: FontSize.md, fontFamily: FontFamily.sans, color: Colors.textSecondary, marginTop: 4 },
   budgetRow: { marginTop: 20 },
   budgetRowHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   budgetCatName: { fontSize: FontSize.md, fontFamily: FontFamily.sansSemiBold, color: Colors.text },
   budgetAmountText: { fontSize: FontSize.md, fontFamily: FontFamily.serifBold, color: Colors.text },
+  donutSection: { alignItems: 'center', marginTop: 24, marginBottom: 8 },
+  legendRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12, marginTop: 16, marginBottom: 8 },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  legendDot: { width: 10, height: 10, borderRadius: 5 },
+  legendText: { fontSize: FontSize.xs, fontFamily: FontFamily.sans, color: Colors.textSecondary },
+  sliderContainer: { marginTop: 8, paddingHorizontal: 4 },
+  sliderPreviewText: { fontSize: FontSize.lg, fontFamily: FontFamily.serifBold, color: Colors.text, textAlign: 'center', marginBottom: 4 },
+  slider: { width: '100%', height: 40 },
+  sliderLabels: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 4 },
+  sliderLabelText: { fontSize: FontSize.xs, fontFamily: FontFamily.sans, color: Colors.textSecondary },
+  sliderActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
+  sliderConfirmBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 16, paddingVertical: 8, borderRadius: BorderRadius.full, backgroundColor: Colors.gold },
+  sliderConfirmBtnText: { fontSize: FontSize.xs, fontFamily: FontFamily.sansSemiBold, color: '#fff' },
+  removeCatBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4 },
+  removeCatBtnText: { fontSize: FontSize.xs, color: Colors.error },
   addCatsRow: { marginTop: 24 },
   addCatsHint: { fontSize: FontSize.md, color: Colors.textSecondary, marginBottom: 12 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
@@ -528,4 +918,28 @@ const styles = StyleSheet.create({
   // Shared
   emptyState: { alignItems: 'center', paddingVertical: 64, gap: 12 },
   emptyText: { fontSize: FontSize.md, color: Colors.textSecondary },
+  // Detail Modal
+  detailModalContainer: { flex: 1, backgroundColor: Colors.surface },
+  detailModalScroll: { paddingBottom: 100 },
+  detailModalBackBtn: { padding: 16 },
+  detailModalImagePlaceholder: { height: 220, backgroundColor: Colors.goldLight, justifyContent: 'center', alignItems: 'center' },
+  detailModalAvatarWrap: { alignItems: 'center', paddingTop: 24 },
+  detailModalAvatar: { width: 112, height: 112, borderRadius: 56, backgroundColor: Colors.gold, justifyContent: 'center', alignItems: 'center' },
+  detailModalAvatarText: { color: '#fff', fontSize: 40, fontFamily: FontFamily.serifBold },
+  detailModalBody: { padding: Spacing.lg },
+  detailModalTitle: { fontSize: FontSize.xxxl, fontFamily: FontFamily.serifBold, color: Colors.text },
+  detailModalMetaRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 8 },
+  detailCatBadge: { borderRadius: BorderRadius.full, backgroundColor: Colors.goldLight, paddingHorizontal: 12, paddingVertical: 4 },
+  detailCatBadgeText: { fontSize: 11, fontWeight: '500', color: Colors.gold },
+  detailPriceBadge: { borderRadius: BorderRadius.full, borderWidth: 1, borderColor: 'rgba(26,26,26,0.1)', paddingHorizontal: 12, paddingVertical: 4 },
+  detailPriceBadgeText: { fontSize: 11, fontWeight: '500', color: Colors.text },
+  detailLocationText: { fontSize: FontSize.md, fontFamily: FontFamily.sans, color: Colors.textSecondary },
+  detailSection: { marginTop: 24 },
+  detailSectionLabel: { fontSize: FontSize.xs, fontFamily: FontFamily.sansSemiBold, color: Colors.gold, letterSpacing: 1, marginBottom: 8 },
+  detailSectionText: { fontSize: FontSize.md, fontFamily: FontFamily.sans, color: Colors.textSecondary, lineHeight: 22 },
+  detailContactRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: Colors.background, borderRadius: 12, padding: 12, marginTop: 8 },
+  detailContactText: { fontSize: FontSize.md, fontFamily: FontFamily.sans, color: Colors.text },
+  detailModalFooter: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: Spacing.lg, backgroundColor: Colors.surface },
+  detailStatusBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 56, borderRadius: BorderRadius.full },
+  detailStatusBtnText: { fontSize: FontSize.base, fontFamily: FontFamily.sansSemiBold },
 });

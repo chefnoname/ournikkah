@@ -1,12 +1,13 @@
-import { BorderRadius, Colors, FontFamily, FontSize, Spacing } from '@/constants/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, GradientConfig, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/useAuth';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
-  ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView,
-  StyleSheet,
-  Text, TextInput, TouchableOpacity,
-  View,
+    ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView,
+    StyleSheet,
+    Text, TextInput, TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -46,85 +47,87 @@ export default function AuthScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.flex}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
+    <LinearGradient {...GradientConfig} style={{ flex: 1 }}>
+      <SafeAreaView style={styles.container}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.flex}
         >
-          <Text style={styles.title}>My Nikkah</Text>
-          <Text style={styles.subtitle}>Your wedding journey</Text>
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            <Text style={styles.title}>My Nikkah</Text>
+            <Text style={styles.subtitle}>Your wedding journey</Text>
 
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Welcome</Text>
-            <Text style={styles.cardDesc}>Sign in to access your planner</Text>
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Welcome</Text>
+              <Text style={styles.cardDesc}>Sign in to access your planner</Text>
 
-            <View style={styles.tabRow}>
-              <TouchableOpacity
-                style={[styles.tab, activeTab === 'login' && styles.tabActive]}
-                onPress={() => { setActiveTab('login'); setError(''); }}
-              >
-                <Text style={[styles.tabText, activeTab === 'login' && styles.tabTextActive]}>Login</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.tab, activeTab === 'register' && styles.tabActive]}
-                onPress={() => { setActiveTab('register'); setError(''); }}
-              >
-                <Text style={[styles.tabText, activeTab === 'register' && styles.tabTextActive]}>Register</Text>
-              </TouchableOpacity>
+              <View style={styles.tabRow}>
+                <TouchableOpacity
+                  style={[styles.tab, activeTab === 'login' && styles.tabActive]}
+                  onPress={() => { setActiveTab('login'); setError(''); }}
+                >
+                  <Text style={[styles.tabText, activeTab === 'login' && styles.tabTextActive]}>Login</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.tab, activeTab === 'register' && styles.tabActive]}
+                  onPress={() => { setActiveTab('register'); setError(''); }}
+                >
+                  <Text style={[styles.tabText, activeTab === 'register' && styles.tabTextActive]}>Register</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.form}>
+                <Text style={styles.label}>Email</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="you@example.com"
+                  placeholderTextColor={Colors.textSecondary}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+
+                <Text style={styles.label}>Password</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="••••••••"
+                  placeholderTextColor={Colors.textSecondary}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                />
+
+                {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+                <TouchableOpacity
+                  style={[styles.submitButton, isLoading && styles.buttonDisabled]}
+                  onPress={handleSubmit}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.submitText}>
+                      {activeTab === 'login' ? 'Sign In' : 'Create Account'}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
-
-            <View style={styles.form}>
-              <Text style={styles.label}>Email</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="you@example.com"
-                placeholderTextColor={Colors.textSecondary}
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-
-              <Text style={styles.label}>Password</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="••••••••"
-                placeholderTextColor={Colors.textSecondary}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-              />
-
-              {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-              <TouchableOpacity
-                style={[styles.submitButton, isLoading && styles.buttonDisabled]}
-                onPress={handleSubmit}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.submitText}>
-                    {activeTab === 'login' ? 'Sign In' : 'Create Account'}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1, backgroundColor: 'transparent' },
   flex: { flex: 1 },
   scrollContent: {
     flexGrow: 1,

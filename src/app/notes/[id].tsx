@@ -2,8 +2,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
+import { GradientConfig } from '@/constants/theme';
 import { useNotes } from '@/lib/useNotes';
 import { validateNote } from '@/lib/validation';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -80,76 +82,78 @@ export default function NoteDetailScreen() {
   const isLoading = isUpdating || isDeleting;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Edit Note</Text>
-        </View>
+    <LinearGradient {...GradientConfig} style={{ flex: 1 }}>
+      <SafeAreaView style={styles.container}>
+        <ScrollView style={styles.content}>
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Edit Note</Text>
+          </View>
 
-        <Separator />
+          <Separator />
 
-        <View style={styles.form}>
-          {error && (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{error}</Text>
+          <View style={styles.form}>
+            {error && (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            )}
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Title</Text>
+              <Input
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Enter note title"
+                editable={!isLoading}
+              />
             </View>
-          )}
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Title</Text>
-            <Input
-              value={title}
-              onChangeText={setTitle}
-              placeholder="Enter note title"
-              editable={!isLoading}
-            />
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Content</Text>
+              <Textarea
+                value={content}
+                onChangeText={setContent}
+                placeholder="Write your note here..."
+                editable={!isLoading}
+                style={styles.textarea}
+              />
+            </View>
           </View>
+        </ScrollView>
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Content</Text>
-            <Textarea
-              value={content}
-              onChangeText={setContent}
-              placeholder="Write your note here..."
-              editable={!isLoading}
-              style={styles.textarea}
-            />
-          </View>
+        <View style={styles.footer}>
+          <Button
+            variant="destructive"
+            onPress={handleDelete}
+            disabled={isLoading}
+            style={styles.deleteButton}
+          >
+            {isDeleting ? 'Deleting...' : 'Delete'}
+          </Button>
+          <Button
+            variant="outline"
+            onPress={() => router.back()}
+            disabled={isLoading}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="default"
+            onPress={handleUpdate}
+            disabled={isLoading}
+          >
+            {isUpdating ? 'Saving...' : 'Save'}
+          </Button>
         </View>
-      </ScrollView>
-
-      <View style={styles.footer}>
-        <Button
-          variant="destructive"
-          onPress={handleDelete}
-          disabled={isLoading}
-          style={styles.deleteButton}
-        >
-          {isDeleting ? 'Deleting...' : 'Delete'}
-        </Button>
-        <Button
-          variant="outline"
-          onPress={() => router.back()}
-          disabled={isLoading}
-        >
-          Cancel
-        </Button>
-        <Button
-          variant="default"
-          onPress={handleUpdate}
-          disabled={isLoading}
-        >
-          {isUpdating ? 'Saving...' : 'Save'}
-        </Button>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent',
   },
   content: {
     flex: 1,

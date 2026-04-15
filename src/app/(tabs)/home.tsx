@@ -1,9 +1,10 @@
-import { BorderRadius, Colors, FontFamily, FontSize, Spacing } from '@/constants/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, GradientConfig, Spacing } from '@/constants/theme';
 import { api, buildUrl, toAbsoluteUrl } from '@/lib/api';
 import { fetchWithAuth } from '@/lib/fetchWithAuth';
 import { useWorkspace } from '@/lib/useWorkspace';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
@@ -87,11 +88,13 @@ export default function HomeTab() {
 
   if (isLoading && !workspace) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingCenter}>
-          <ActivityIndicator size="large" color={Colors.gold} />
-        </View>
-      </SafeAreaView>
+      <LinearGradient {...GradientConfig} style={{ flex: 1 }}>
+        <SafeAreaView style={styles.container}>
+          <View style={styles.loadingCenter}>
+            <ActivityIndicator size="large" color={Colors.gold} />
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
     );
   }
 
@@ -100,16 +103,17 @@ export default function HomeTab() {
   const collaborators = members.filter(m => m.role === 'collaborator');
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.gold} />}
-      >
+    <LinearGradient {...GradientConfig} style={{ flex: 1 }}>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.gold} />}
+        >
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerLogo}>MyNikkah</Text>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{name}</Text>
+            <Text style={styles.avatarText}>{name?.split('')[0].toUpperCase()}</Text>
           </View>
         </View>
 
@@ -196,12 +200,13 @@ export default function HomeTab() {
           </View>
         </TouchableOpacity>
       </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1, backgroundColor: 'transparent' },
   loadingCenter: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scroll: { padding: Spacing.lg, paddingBottom: 120, gap: Spacing.lg },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: Spacing.xs },

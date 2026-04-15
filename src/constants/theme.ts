@@ -44,6 +44,13 @@ export const BorderRadius = {
   full: 9999,
 } as const;
 
+export const GradientConfig = {
+  colors: ['#FFFFFF', '#EBD3CC'] as const,
+  locations: [0.02, 0.55] as [number, number],
+  start: { x: 0.5, y: 1 },
+  end: { x: 0.5, y: 0 },
+} as const;
+
 export const FontFamily = {
   serif: 'CormorantGaramond_400Regular',
   serifSemiBold: 'CormorantGaramond_600SemiBold',

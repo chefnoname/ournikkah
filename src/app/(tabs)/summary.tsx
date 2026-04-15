@@ -1,13 +1,14 @@
-import { BorderRadius, Colors, FontFamily, FontSize, Spacing } from '@/constants/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, GradientConfig, Spacing } from '@/constants/theme';
 import { useWorkspace } from '@/lib/useWorkspace';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator, RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    ActivityIndicator, RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -28,7 +29,9 @@ export default function SummaryTab() {
   const loading = !workspace && !summary;
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}><View style={styles.center}><ActivityIndicator size="large" color={Colors.gold} /></View></SafeAreaView>
+      <LinearGradient {...GradientConfig} style={{ flex: 1 }}>
+        <SafeAreaView style={styles.container}><View style={styles.center}><ActivityIndicator size="large" color={Colors.gold} /></View></SafeAreaView>
+      </LinearGradient>
     );
   }
 
@@ -39,11 +42,12 @@ export default function SummaryTab() {
   const countdown = summary?.nikahCountdownDays;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.gold} />}
-      >
+    <LinearGradient {...GradientConfig} style={{ flex: 1 }}>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.gold} />}
+        >
         <Text style={styles.title}>Summary</Text>
         <Text style={styles.subtitle}>No thinking. Just clarity.</Text>
 
@@ -161,12 +165,13 @@ export default function SummaryTab() {
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1, backgroundColor: 'transparent' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scroll: { padding: Spacing.lg, paddingBottom: 120, gap: Spacing.md },
   title: { fontSize: FontSize.xxxl, fontFamily: FontFamily.serifBold, color: Colors.text, letterSpacing: -0.5 },

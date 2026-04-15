@@ -1,5 +1,6 @@
-import { BorderRadius, Colors, FontFamily, FontSize, Spacing } from '@/constants/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, GradientConfig, Spacing } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -23,37 +24,39 @@ export default function AITab() {
   }, []);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.content}>
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Ionicons name="ellipsis-horizontal" size={24} color={Colors.gold} />
-            <View style={styles.aiBadge}>
-              <Ionicons name="sparkles" size={14} color={Colors.gold} />
-              <Text style={styles.aiBadgeText}>MyNikkah AI</Text>
+    <LinearGradient {...GradientConfig} style={{ flex: 1 }}>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.content}>
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="ellipsis-horizontal" size={24} color={Colors.gold} />
+              <View style={styles.aiBadge}>
+                <Ionicons name="sparkles" size={14} color={Colors.gold} />
+                <Text style={styles.aiBadgeText}>MyNikkah AI</Text>
+              </View>
             </View>
+
+            <View style={styles.textSection}>
+              <Text style={styles.helpMe}>Help Me</Text>
+              <Text style={styles.phrase}>{PHRASES[index]}</Text>
+            </View>
+
+            <TouchableOpacity style={styles.comingSoonBtn} disabled>
+              <Text style={styles.comingSoonText}>Coming Soon</Text>
+            </TouchableOpacity>
           </View>
 
-          <View style={styles.textSection}>
-            <Text style={styles.helpMe}>Help Me</Text>
-            <Text style={styles.phrase}>{PHRASES[index]}</Text>
-          </View>
-
-          <TouchableOpacity style={styles.comingSoonBtn} disabled>
-            <Text style={styles.comingSoonText}>Coming Soon</Text>
-          </TouchableOpacity>
+          <Text style={styles.footerText}>
+            Your personal Nikah planning assistant. Coming soon.
+          </Text>
         </View>
-
-        <Text style={styles.footerText}>
-          Your personal Nikah planning assistant. Coming soon.
-        </Text>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.rose },
+  container: { flex: 1, backgroundColor: 'transparent' },
   content: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.lg, gap: Spacing.lg },
   card: {
     width: '100%', maxWidth: 400,

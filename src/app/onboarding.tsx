@@ -1,9 +1,10 @@
-import { BorderRadius, Colors, FontFamily, FontSize, Spacing } from '@/constants/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, GradientConfig, Spacing } from '@/constants/theme';
 import { api, buildUrl, toAbsoluteUrl } from '@/lib/api';
 import { fetchWithAuth } from '@/lib/fetchWithAuth';
 import { useWorkspace } from '@/lib/useWorkspace';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import {
@@ -173,6 +174,8 @@ export default function Onboarding() {
               value={data.userName}
               onChangeText={v => update('userName', v)}
               autoFocus
+              selectionColor={Colors.gold}
+              underlineColorAndroid="transparent"
             />
             <PrimaryBtn onPress={() => goTo(3)} disabled={!data.userName.trim()}>Continue →</PrimaryBtn>
           </View>
@@ -192,6 +195,8 @@ export default function Onboarding() {
               value={data.partnerName}
               onChangeText={v => update('partnerName', v)}
               autoFocus
+              selectionColor={Colors.gold}
+              underlineColorAndroid="transparent"
             />
             <PrimaryBtn onPress={() => goTo(4)}>Continue →</PrimaryBtn>
             <TouchableOpacity onPress={() => { update('partnerName', ''); goTo(4); }}>
@@ -389,23 +394,25 @@ export default function Onboarding() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Animated.View
-        key={screen}
-        entering={screen === 1 ? FadeIn.duration(400) : entering}
-        exiting={screen === 1 ? FadeOut.duration(200) : exiting}
-        style={styles.animatedContainer}
-      >
-        {renderScreen()}
-      </Animated.View>
-    </SafeAreaView>
+    <LinearGradient {...GradientConfig} style={{ flex: 1 }}>
+      <SafeAreaView style={styles.container}>
+        <Animated.View
+          key={screen}
+          entering={screen === 1 ? FadeIn.duration(400) : entering}
+          exiting={screen === 1 ? FadeOut.duration(200) : exiting}
+          style={styles.animatedContainer}
+        >
+          {renderScreen()}
+        </Animated.View>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: 'transparent',
     overflow: 'hidden',
   },
   animatedContainer: {
@@ -415,7 +422,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
+    // paddingHorizontal: Spacing.lg,
   },
   screenContent: {
     flexGrow: 1,
@@ -474,6 +481,8 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.gold,
     paddingBottom: Spacing.sm,
     marginVertical: Spacing.md,
+    // @ts-ignore — web only: removes browser default blue focus ring
+    outlineWidth: 0,
   },
   dateInput: {
     borderRadius: BorderRadius.xl,
