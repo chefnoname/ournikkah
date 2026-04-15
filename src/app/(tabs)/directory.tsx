@@ -1,4 +1,4 @@
-import { BorderRadius, Colors, FontSize, Spacing } from '@/constants/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, Spacing } from '@/constants/theme';
 import { api, buildUrl, toAbsoluteUrl } from '@/lib/api';
 import { fetchWithAuth } from '@/lib/fetchWithAuth';
 import type { SavedVendor, VendorItem } from '@/lib/types';
@@ -6,13 +6,13 @@ import { useWorkspace } from '@/lib/useWorkspace';
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert, FlatList,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text, TextInput, TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert, FlatList,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text, TextInput, TouchableOpacity,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -63,7 +63,7 @@ export default function DirectoryTab() {
     } catch (e) { console.error(e); }
   }, [workspaceId]);
 
-  useEffect(() => { fetchDirectory(); fetchSaved(); }, []);
+  useEffect(() => { fetchDirectory(); fetchSaved(); }, []); // react-hooks/exhaustive-deps
 
   const handleSave = async (vendorItemId: number) => {
     if (!workspaceId) return;
@@ -327,12 +327,12 @@ export default function DirectoryTab() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   headerSection: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, gap: Spacing.sm },
-  pageTitle: { fontSize: FontSize.xxxl, fontWeight: '700', color: Colors.text, letterSpacing: -0.5 },
-  pageSubtitle: { fontSize: FontSize.md, color: Colors.textSecondary },
+  pageTitle: { fontSize: FontSize.xxxl, fontFamily: FontFamily.serifBold, color: Colors.text, letterSpacing: -0.5 },
+  pageSubtitle: { fontSize: FontSize.md, fontFamily: FontFamily.sans, color: Colors.textSecondary },
   tabRow: { flexDirection: 'row', gap: Spacing.sm, paddingTop: Spacing.sm },
   tabBtn: { borderRadius: BorderRadius.full, paddingHorizontal: 20, paddingVertical: 8, backgroundColor: Colors.surface },
   tabBtnActive: { backgroundColor: Colors.primary },
-  tabBtnText: { fontSize: FontSize.md, fontWeight: '500', color: Colors.textSecondary },
+  tabBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.sansMedium, color: Colors.textSecondary },
   tabBtnTextActive: { color: '#fff' },
   subTabScroll: { marginTop: 4 },
   subTab: { borderRadius: BorderRadius.full, paddingHorizontal: 16, paddingVertical: 6, backgroundColor: Colors.surface, marginRight: 8 },
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
   subTabTextActive: { color: '#fff' },
   searchRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surface, borderRadius: BorderRadius.full, borderWidth: 1, borderColor: 'rgba(26,26,26,0.1)', marginTop: 4 },
   searchIcon: { marginLeft: 16 },
-  searchInput: { flex: 1, paddingHorizontal: 12, paddingVertical: 10, fontSize: FontSize.md, color: Colors.text },
+  searchInput: { flex: 1, paddingHorizontal: 12, paddingVertical: 10, fontSize: FontSize.md, fontFamily: FontFamily.sans, color: Colors.text },
   loadingCenter: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   listContent: { padding: Spacing.lg, paddingBottom: 120, gap: Spacing.md },
   itemCard: { backgroundColor: Colors.surface, borderRadius: BorderRadius.xl, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, overflow: 'hidden' },
@@ -352,16 +352,16 @@ const styles = StyleSheet.create({
   vendorTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   itemContent: { padding: 20, gap: 12 },
   itemTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
-  itemTitle: { fontSize: FontSize.base, fontWeight: '600', color: Colors.text },
+  itemTitle: { fontSize: FontSize.base, fontFamily: FontFamily.sansSemiBold, color: Colors.text },
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
-  locationText: { fontSize: FontSize.md, color: Colors.textSecondary },
-  priceText: { fontSize: FontSize.md, fontWeight: '600', color: Colors.gold },
+  locationText: { fontSize: FontSize.md, fontFamily: FontFamily.sans, color: Colors.textSecondary },
+  priceText: { fontSize: FontSize.md, fontFamily: FontFamily.sansSemiBold, color: Colors.gold },
   badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   featureBadge: { borderRadius: BorderRadius.full, borderWidth: 1, borderColor: 'rgba(26,26,26,0.1)', paddingHorizontal: 12, paddingVertical: 6 },
   featureBadgeText: { fontSize: FontSize.xs, fontWeight: '500', color: Colors.text },
   emptyState: { alignItems: 'center', paddingVertical: 64, backgroundColor: Colors.surface, borderRadius: BorderRadius.xl },
-  emptyTitle: { fontSize: FontSize.lg, fontWeight: '500', color: Colors.text },
-  emptyDesc: { fontSize: FontSize.md, color: Colors.textSecondary, marginTop: 4 },
+  emptyTitle: { fontSize: FontSize.lg, fontFamily: FontFamily.sansMedium, color: Colors.text },
+  emptyDesc: { fontSize: FontSize.md, fontFamily: FontFamily.sans, color: Colors.textSecondary, marginTop: 4 },
   // Modal
   modalContainer: { flex: 1, backgroundColor: Colors.surface },
   modalScroll: { paddingBottom: 100 },
@@ -369,21 +369,21 @@ const styles = StyleSheet.create({
   modalImagePlaceholder: { height: 220, backgroundColor: Colors.goldLight, justifyContent: 'center', alignItems: 'center' },
   modalAvatarWrap: { alignItems: 'center', paddingTop: 24 },
   modalAvatar: { width: 112, height: 112, borderRadius: 56, backgroundColor: Colors.gold, justifyContent: 'center', alignItems: 'center' },
-  modalAvatarText: { color: '#fff', fontSize: 40, fontWeight: '700' },
+  modalAvatarText: { color: '#fff', fontSize: 40, fontFamily: FontFamily.serifBold },
   modalBody: { padding: Spacing.lg },
-  modalTitle: { fontSize: FontSize.xxxl, fontWeight: '700', color: Colors.text },
+  modalTitle: { fontSize: FontSize.xxxl, fontFamily: FontFamily.serifBold, color: Colors.text },
   modalMetaRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 8 },
   catBadge: { borderRadius: BorderRadius.full, backgroundColor: Colors.goldLight, paddingHorizontal: 12, paddingVertical: 4 },
   catBadgeText: { fontSize: 11, fontWeight: '500', color: Colors.gold },
   priceBadge: { borderRadius: BorderRadius.full, borderWidth: 1, borderColor: 'rgba(26,26,26,0.1)', paddingHorizontal: 12, paddingVertical: 4 },
   priceBadgeText: { fontSize: 11, fontWeight: '500', color: Colors.text },
   modalSection: { marginTop: 24 },
-  sectionLabel: { fontSize: FontSize.xs, fontWeight: '600', color: Colors.gold, letterSpacing: 1, marginBottom: 8 },
-  sectionText: { fontSize: FontSize.md, color: Colors.textSecondary, lineHeight: 22 },
+  sectionLabel: { fontSize: FontSize.xs, fontFamily: FontFamily.sansSemiBold, color: Colors.gold, letterSpacing: 1, marginBottom: 8 },
+  sectionText: { fontSize: FontSize.md, fontFamily: FontFamily.sans, color: Colors.textSecondary, lineHeight: 22 },
   contactRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: Colors.background, borderRadius: 12, padding: 12, marginTop: 8 },
-  contactText: { fontSize: FontSize.md, color: Colors.text },
+  contactText: { fontSize: FontSize.md, fontFamily: FontFamily.sans, color: Colors.text },
   modalFooter: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: Spacing.lg, backgroundColor: Colors.surface },
   saveToHubBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 56, borderRadius: BorderRadius.full, backgroundColor: Colors.primary },
   saveToHubBtnDisabled: { opacity: 0.5 },
-  saveToHubText: { fontSize: FontSize.base, fontWeight: '600', color: '#fff' },
+  saveToHubText: { fontSize: FontSize.base, fontFamily: FontFamily.sansSemiBold, color: '#fff' },
 });

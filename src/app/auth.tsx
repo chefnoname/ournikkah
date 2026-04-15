@@ -1,12 +1,12 @@
-import { BorderRadius, Colors, FontSize, Spacing } from '@/constants/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/useAuth';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
-    ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView,
-    StyleSheet,
-    Text, TextInput, TouchableOpacity,
-    View,
+  ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView,
+  StyleSheet,
+  Text, TextInput, TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: FontSize.xxxl,
-    fontWeight: '700',
+    fontFamily: FontFamily.serifBold,
     color: Colors.text,
     textAlign: 'center',
   },
@@ -155,11 +155,12 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: FontSize.xl,
-    fontWeight: '600',
+    fontFamily: FontFamily.serifBold,
     color: Colors.text,
   },
   cardDesc: {
     fontSize: FontSize.md,
+    fontFamily: FontFamily.sans,
     color: Colors.textSecondary,
     marginBottom: Spacing.md,
   },
@@ -184,12 +185,12 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
-  tabText: { fontSize: FontSize.md, color: Colors.textSecondary, fontWeight: '500' },
+  tabText: { fontSize: FontSize.md, fontFamily: FontFamily.sansMedium, color: Colors.textSecondary },
   tabTextActive: { color: Colors.text },
   form: { gap: Spacing.sm },
   label: {
     fontSize: FontSize.md,
-    fontWeight: '500',
+    fontFamily: FontFamily.sansMedium,
     color: Colors.text,
     marginTop: Spacing.sm,
   },
@@ -201,6 +202,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
     paddingHorizontal: Spacing.md,
     fontSize: FontSize.base,
+    fontFamily: FontFamily.sans,
     color: Colors.text,
   },
   errorText: {
@@ -217,5 +219,5 @@ const styles = StyleSheet.create({
     marginTop: Spacing.md,
   },
   buttonDisabled: { opacity: 0.5 },
-  submitText: { color: '#fff', fontSize: FontSize.base, fontWeight: '600' },
+  submitText: { color: '#fff', fontSize: FontSize.base, fontFamily: FontFamily.sansSemiBold },
 });

@@ -1,4 +1,4 @@
-import { BorderRadius, Colors, FontSize, Spacing } from '@/constants/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, Spacing } from '@/constants/theme';
 import { getGuestToken } from '@/lib/fetchWithAuth';
 import { getSavedWorkspaceId, useWorkspace } from '@/lib/useWorkspace';
 import { useRouter } from 'expo-router';
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
   },
   signInText: {
     fontSize: FontSize.md,
-    fontWeight: '500',
+    fontFamily: FontFamily.sansMedium,
     color: Colors.textSecondary,
   },
   content: {
@@ -136,12 +136,13 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: FontSize.hero,
-    fontWeight: '700',
+    fontFamily: FontFamily.serifBold,
     color: Colors.text,
     letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: FontSize.base,
+    fontFamily: FontFamily.sans,
     color: Colors.textSecondary,
     textAlign: 'center',
   },
@@ -163,7 +164,7 @@ const styles = StyleSheet.create({
   startButtonText: {
     color: '#fff',
     fontSize: FontSize.base,
-    fontWeight: '600',
+    fontFamily: FontFamily.sansSemiBold,
   },
   errorText: {
     fontSize: FontSize.md,
@@ -173,6 +174,7 @@ const styles = StyleSheet.create({
   },
   noAccountText: {
     fontSize: FontSize.md,
+    fontFamily: FontFamily.sans,
     color: Colors.textSecondary,
     marginTop: Spacing.sm,
   },
@@ -182,6 +184,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: FontSize.md,
+    fontFamily: FontFamily.sans,
     color: Colors.textSecondary,
   },
 });

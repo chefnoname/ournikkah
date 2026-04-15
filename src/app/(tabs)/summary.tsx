@@ -1,13 +1,13 @@
-import { BorderRadius, Colors, FontSize, Spacing } from '@/constants/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, Spacing } from '@/constants/theme';
 import { useWorkspace } from '@/lib/useWorkspace';
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
 import {
-    ActivityIndicator, RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator, RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -169,17 +169,17 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scroll: { padding: Spacing.lg, paddingBottom: 120, gap: Spacing.md },
-  title: { fontSize: FontSize.xxxl, fontWeight: '700', color: Colors.text, letterSpacing: -0.5 },
+  title: { fontSize: FontSize.xxxl, fontFamily: FontFamily.serifBold, color: Colors.text, letterSpacing: -0.5 },
   subtitle: { fontSize: FontSize.base, fontStyle: 'italic', color: Colors.textSecondary },
   sectionWrap: { marginTop: 16 },
-  sectionLabel: { fontSize: FontSize.xs, fontWeight: '600', color: Colors.gold, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12 },
+  sectionLabel: { fontSize: FontSize.xs, fontFamily: FontFamily.sansSemiBold, color: Colors.gold, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12 },
   subSectionLabel: { fontSize: FontSize.xs, fontWeight: '600', color: Colors.gold, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12, paddingHorizontal: 4 },
   countdownCard: {
     borderRadius: BorderRadius.xl, padding: 32, alignItems: 'center',
     backgroundColor: Colors.goldLight, borderWidth: 1, borderColor: 'rgba(201,169,110,0.2)',
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12,
   },
-  countdownDays: { fontSize: 80, fontWeight: '700', color: Colors.gold, lineHeight: 80 },
+  countdownDays: { fontSize: 80, fontFamily: FontFamily.serifBold, color: Colors.gold, lineHeight: 80 },
   countdownCaption: { fontSize: FontSize.md, color: Colors.textSecondary, textTransform: 'uppercase', letterSpacing: 1, marginTop: 8 },
   countdownDate: { fontSize: FontSize.xs, color: 'rgba(107,107,107,0.7)', marginTop: 4 },
   finalizedCard: {
@@ -188,14 +188,14 @@ const styles = StyleSheet.create({
   },
   finalizedImagePlaceholder: { height: 160, backgroundColor: Colors.goldLight, justifyContent: 'center', alignItems: 'center' },
   finalizedContent: { padding: 20 },
-  finalizedTitle: { fontSize: FontSize.lg, fontWeight: '600', color: Colors.text },
+  finalizedTitle: { fontSize: FontSize.lg, fontFamily: FontFamily.sansSemiBold, color: Colors.text },
   locRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
   locText: { fontSize: FontSize.md, color: Colors.textSecondary },
   pricePill: { borderRadius: BorderRadius.full, backgroundColor: Colors.goldLight, paddingHorizontal: 12, paddingVertical: 4, alignSelf: 'flex-start', marginTop: 8 },
   pricePillText: { fontSize: 11, fontWeight: '500', color: Colors.gold },
   vendorListCard: { backgroundColor: Colors.surface, borderRadius: BorderRadius.xl, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12 },
   vendorRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', padding: 20, gap: 8 },
-  vendorTitle: { fontSize: FontSize.base, fontWeight: '600', color: Colors.text },
+  vendorTitle: { fontSize: FontSize.base, fontFamily: FontFamily.sansSemiBold, color: Colors.text },
   catBadge: { borderRadius: BorderRadius.full, backgroundColor: Colors.goldLight, paddingHorizontal: 12, paddingVertical: 4 },
   catBadgeText: { fontSize: 10, fontWeight: '500', color: Colors.gold },
   divider: { height: 1, backgroundColor: '#F3F4F6', marginHorizontal: 20 },
@@ -204,11 +204,11 @@ const styles = StyleSheet.create({
   statsGrid: { flexDirection: 'row', gap: 16, marginTop: 16 },
   statCard: { flex: 1 },
   statCardInner: { backgroundColor: Colors.surface, borderRadius: BorderRadius.xl, padding: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, gap: 8 },
-  statBig: { fontSize: FontSize.hero, fontWeight: '700', color: Colors.text, textAlign: 'center' },
+  statBig: { fontSize: FontSize.hero, fontFamily: FontFamily.serifBold, color: Colors.text, textAlign: 'center' },
   statSmallLabel: { fontSize: 10, fontWeight: '500', color: Colors.textSecondary, textAlign: 'center' },
   statRow: { flexDirection: 'row', justifyContent: 'space-around', gap: 8 },
   statItem: { alignItems: 'center' },
-  statMed: { fontSize: FontSize.lg, fontWeight: '700' },
+  statMed: { fontSize: FontSize.lg, fontFamily: FontFamily.serifBold },
   statTinyLabel: { fontSize: 10, fontWeight: '500', color: Colors.textSecondary },
   progressBar: { height: 6, backgroundColor: Colors.background, borderRadius: 3, overflow: 'hidden' },
   progressFill: { height: 6, backgroundColor: Colors.gold, borderRadius: 3 },

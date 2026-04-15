@@ -1,4 +1,4 @@
-import { BorderRadius, Colors, FontSize, Spacing } from '@/constants/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, Spacing } from '@/constants/theme';
 import { api, buildUrl, toAbsoluteUrl } from '@/lib/api';
 import { fetchWithAuth } from '@/lib/fetchWithAuth';
 import { useWorkspace } from '@/lib/useWorkspace';
@@ -7,11 +7,11 @@ import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
-    ActivityIndicator, Alert, RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text, TouchableOpacity,
-    View,
+  ActivityIndicator, Alert, RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text, TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -95,7 +95,7 @@ export default function HomeTab() {
     );
   }
 
-  const name = workspace?.userName || workspace?.name || 'there';
+  const name = workspace?.userName || workspace?.name;
   const countdown = summary?.nikahCountdownDays ?? null;
   const collaborators = members.filter(m => m.role === 'collaborator');
 
@@ -109,7 +109,7 @@ export default function HomeTab() {
         <View style={styles.header}>
           <Text style={styles.headerLogo}>MyNikkah</Text>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{name.charAt(0).toUpperCase()}</Text>
+            <Text style={styles.avatarText}>{name}</Text>
           </View>
         </View>
 
@@ -187,8 +187,8 @@ export default function HomeTab() {
           </View>
           <View style={{ marginTop: 24 }}>
             <Text style={styles.aiTitle}>
-              <Text style={{ fontWeight: '300' }}>Help Me{'\n'}</Text>
-              <Text style={{ fontWeight: '700', color: Colors.gold }}>Plan My Nikah</Text>
+              <Text style={{ fontFamily: FontFamily.sansLight }}>Help Me{'\n'}</Text>
+              <Text style={{ fontFamily: FontFamily.serifBold, color: Colors.gold }}>Plan My Nikah</Text>
             </Text>
           </View>
           <View style={styles.comingSoonPill}>
@@ -205,28 +205,28 @@ const styles = StyleSheet.create({
   loadingCenter: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scroll: { padding: Spacing.lg, paddingBottom: 120, gap: Spacing.lg },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: Spacing.xs },
-  headerLogo: { fontSize: FontSize.xl, fontWeight: '700', color: Colors.text, letterSpacing: -0.5 },
+  headerLogo: { fontSize: FontSize.xl, fontFamily: FontFamily.serifBold, color: Colors.text, letterSpacing: -0.5 },
   avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.goldLight, justifyContent: 'center', alignItems: 'center' },
-  avatarText: { fontWeight: '700', color: Colors.gold, fontSize: FontSize.lg },
+  avatarText: { fontFamily: FontFamily.serifBold, color: Colors.gold, fontSize: FontSize.lg },
   heroCard: {
     borderRadius: BorderRadius.xl, padding: Spacing.lg,
     backgroundColor: Colors.rose,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12,
   },
-  greeting: { fontSize: FontSize.xxl, fontWeight: '700', color: Colors.text },
-  countdownSubtitle: { fontSize: FontSize.base, color: Colors.textSecondary, marginTop: 4 },
+  greeting: { fontSize: FontSize.xxl, fontFamily: FontFamily.serifBold, color: Colors.text },
+  countdownSubtitle: { fontSize: FontSize.base, fontFamily: FontFamily.sans, color: Colors.textSecondary, marginTop: 4 },
   countdownPill: {
     alignSelf: 'flex-start', borderRadius: BorderRadius.full,
     backgroundColor: Colors.gold, paddingHorizontal: 16, paddingVertical: 8, marginTop: Spacing.md,
   },
-  countdownPillText: { fontSize: FontSize.md, fontWeight: '500', color: '#fff' },
+  countdownPillText: { fontSize: FontSize.md, fontFamily: FontFamily.sansMedium, color: '#fff' },
   card: {
     borderRadius: BorderRadius.xl, backgroundColor: Colors.surface, padding: 20,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12,
   },
   ourNikkahRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  cardTitle: { fontSize: FontSize.lg, fontWeight: '700', color: Colors.text },
-  cardDesc: { fontSize: FontSize.xs, color: Colors.textSecondary, marginTop: 4, maxWidth: 200 },
+  cardTitle: { fontSize: FontSize.lg, fontFamily: FontFamily.sansSemiBold, color: Colors.text },
+  cardDesc: { fontSize: FontSize.xs, fontFamily: FontFamily.sans, color: Colors.textSecondary, marginTop: 4, maxWidth: 200 },
   collabAvatar: {
     width: 32, height: 32, borderRadius: 16, backgroundColor: Colors.gold,
     borderWidth: 2, borderColor: Colors.surface, justifyContent: 'center', alignItems: 'center', marginLeft: -8,
@@ -238,14 +238,14 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.full, backgroundColor: Colors.gold,
     paddingHorizontal: 16, paddingVertical: 8,
   },
-  inviteBtnText: { fontSize: FontSize.xs, fontWeight: '500', color: '#fff' },
+  inviteBtnText: { fontSize: FontSize.xs, fontFamily: FontFamily.sansMedium, color: '#fff' },
   actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md },
   actionCard: {
     width: '30%', flexGrow: 1, alignItems: 'center', justifyContent: 'center', gap: 8,
     borderRadius: BorderRadius.lg, backgroundColor: Colors.surface, paddingVertical: Spacing.md,
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 8,
   },
-  actionLabel: { fontSize: FontSize.xs, fontWeight: '500', color: Colors.text },
+  actionLabel: { fontSize: FontSize.xs, fontFamily: FontFamily.sansMedium, color: Colors.text },
   aiCard: {
     borderRadius: BorderRadius.xl, backgroundColor: Colors.surface, padding: Spacing.lg,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, overflow: 'hidden',
@@ -255,11 +255,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 6,
     borderRadius: BorderRadius.full, backgroundColor: Colors.goldLight, paddingHorizontal: 12, paddingVertical: 6,
   },
-  aiBadgeText: { fontSize: 13, fontWeight: '500', color: Colors.gold },
-  aiTitle: { fontSize: FontSize.xxl, color: Colors.text, lineHeight: 34 },
+  aiBadgeText: { fontSize: 13, fontFamily: FontFamily.sansMedium, color: Colors.gold },
+  aiTitle: { fontSize: FontSize.xxl, fontFamily: FontFamily.serifBold, color: Colors.text, lineHeight: 34 },
   comingSoonPill: {
     alignSelf: 'flex-start', borderRadius: BorderRadius.full,
     backgroundColor: Colors.primary, paddingHorizontal: 24, paddingVertical: 12, marginTop: 24, opacity: 0.9,
   },
-  comingSoonText: { fontSize: FontSize.md, fontWeight: '500', color: '#fff' },
+  comingSoonText: { fontSize: FontSize.md, fontFamily: FontFamily.sansMedium, color: '#fff' },
 });

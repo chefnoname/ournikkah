@@ -1,19 +1,20 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { FontFamily } from '@/constants/theme';
 import type { Note } from '@/lib/types';
 import { useNotes } from '@/lib/useNotes';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    ActivityIndicator,
-    FlatList,
-    Pressable,
-    RefreshControl,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 
 export default function NotesListScreen() {
@@ -34,6 +35,7 @@ export default function NotesListScreen() {
     }
   };
 
+
   const handleDelete = async (id: number) => {
     setDeletingId(id);
     try {
@@ -44,6 +46,8 @@ export default function NotesListScreen() {
       setDeletingId(null);
     }
   };
+
+  handleDelete(1000); // Example usage, replace with actual note ID to delete
 
   const handleNavigateToNote = (note: Note) => {
     router.push({
@@ -204,11 +208,12 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
-    fontWeight: '600',
+    fontFamily: FontFamily.sansSemiBold,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
+    fontFamily: FontFamily.sans,
     color: '#6b7280',
     marginBottom: 20,
   },
@@ -230,12 +235,13 @@ const styles = StyleSheet.create({
   },
   noteTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontFamily: FontFamily.serifBold,
     flex: 1,
     marginRight: 8,
   },
   noteContent: {
     fontSize: 14,
+    fontFamily: FontFamily.sans,
     color: '#6b7280',
     lineHeight: 20,
     marginBottom: 10,
@@ -250,6 +256,7 @@ const styles = StyleSheet.create({
   },
   noteDate: {
     fontSize: 12,
+    fontFamily: FontFamily.sans,
     color: '#9ca3af',
   },
   noteAuthor: {

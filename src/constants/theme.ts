@@ -43,3 +43,13 @@ export const BorderRadius = {
   xl: 20,
   full: 9999,
 } as const;
+
+export const FontFamily = {
+  serif: 'CormorantGaramond_400Regular',
+  serifSemiBold: 'CormorantGaramond_600SemiBold',
+  serifBold: 'CormorantGaramond_700Bold',
+  sans: 'Inter_400Regular',
+  sansLight: 'Inter_300Light',
+  sansMedium: 'Inter_500Medium',
+  sansSemiBold: 'Inter_600SemiBold',
+} as const;

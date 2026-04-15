@@ -1,4 +1,4 @@
-import { BorderRadius, Colors, FontSize, Spacing } from '@/constants/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, Spacing } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -65,14 +65,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 6,
     borderRadius: BorderRadius.full, backgroundColor: Colors.goldLight, paddingHorizontal: 12, paddingVertical: 6,
   },
-  aiBadgeText: { fontSize: 13, fontWeight: '500', color: Colors.gold },
+  aiBadgeText: { fontSize: 13, fontFamily: FontFamily.sansMedium, color: Colors.gold },
   textSection: { marginBottom: 32, minHeight: 96 },
-  helpMe: { fontSize: FontSize.xxl, fontWeight: '300', color: Colors.text, letterSpacing: -0.5 },
-  phrase: { fontSize: FontSize.xxl, fontWeight: '700', color: Colors.gold, letterSpacing: -0.5, marginTop: 4 },
+  helpMe: { fontSize: FontSize.xxl, fontFamily: FontFamily.sansLight, color: Colors.text, letterSpacing: -0.5 },
+  phrase: { fontSize: FontSize.xxl, fontFamily: FontFamily.serifBold, color: Colors.gold, letterSpacing: -0.5, marginTop: 4 },
   comingSoonBtn: {
     width: '100%', height: 56, borderRadius: BorderRadius.full,
     backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center', opacity: 0.9,
   },
-  comingSoonText: { fontSize: FontSize.base, fontWeight: '500', color: '#fff' },
-  footerText: { fontSize: FontSize.md, fontWeight: '500', color: Colors.textSecondary, textAlign: 'center' },
+  comingSoonText: { fontSize: FontSize.base, fontFamily: FontFamily.sansMedium, color: '#fff' },
+  footerText: { fontSize: FontSize.md, fontFamily: FontFamily.sansMedium, color: Colors.textSecondary, textAlign: 'center' },
 });
