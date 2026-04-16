@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import FadeScreen from '@/components/FadeScreen';
 
 const PHRASES = [
   'Plan My Nikah',
@@ -24,6 +25,7 @@ export default function AITab() {
   }, []);
 
   return (
+    <FadeScreen>
     <LinearGradient {...GradientConfig} style={{ flex: 1 }}>
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.content}>
@@ -52,6 +54,7 @@ export default function AITab() {
         </View>
       </SafeAreaView>
     </LinearGradient>
+    </FadeScreen>
   );
 }
 

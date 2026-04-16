@@ -21,6 +21,7 @@ import {
   View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import FadeScreen from '@/components/FadeScreen';
 
 const VENUE_SUBS = [
   { value: 'all', label: 'All Venues' },
@@ -262,6 +263,7 @@ export default function DirectoryTab() {
   );
 
   return (
+    <FadeScreen>
     <LinearGradient {...GradientConfig} style={{ flex: 1 }}>
       <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.headerSection}>
@@ -439,6 +441,7 @@ export default function DirectoryTab() {
       </Modal>
     </SafeAreaView>
     </LinearGradient>
+    </FadeScreen>
   );
 }
 

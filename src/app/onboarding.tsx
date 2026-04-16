@@ -152,11 +152,15 @@ export default function Onboarding() {
       case 1:
         return (
           <View style={styles.centered}>
-            <Text style={styles.heroTitle}>Assalamu Alaykum</Text>
-            <Text style={styles.heroSubtitle}>Let's plan your Nikah, the right way.</Text>
-            <View style={{ width: '100%', marginTop: 32 }}>
+            <Animated.View entering={FadeIn.delay(200).duration(400)}>
+              <Text style={styles.heroTitle}>Assalamu Alaykum</Text>
+            </Animated.View>
+            <Animated.View entering={FadeIn.delay(500).duration(400)}>
+              <Text style={styles.heroSubtitle}>Let's plan your Nikah, the right way.</Text>
+            </Animated.View>
+            <Animated.View entering={FadeIn.delay(800).duration(400)} style={{ width: '100%', marginTop: 32 }}>
               <PrimaryBtn onPress={() => goTo(2)}>Begin →</PrimaryBtn>
-            </View>
+            </Animated.View>
           </View>
         );
 
@@ -165,19 +169,27 @@ export default function Onboarding() {
           <View style={styles.screenContent}>
             <BackButton />
             <Logo />
-            <Text style={styles.screenTitle}>What's your name?</Text>
-            <Text style={styles.screenDesc}>We'll use this to personalise your experience.</Text>
-            <TextInput
-              style={styles.nameInput}
-              placeholder="e.g. Fatima"
-              placeholderTextColor="rgba(107,107,107,0.4)"
-              value={data.userName}
-              onChangeText={v => update('userName', v)}
-              autoFocus
-              selectionColor={Colors.gold}
-              underlineColorAndroid="transparent"
-            />
-            <PrimaryBtn onPress={() => goTo(3)} disabled={!data.userName.trim()}>Continue →</PrimaryBtn>
+            <Animated.View entering={FadeIn.delay(150).duration(350)}>
+              <Text style={styles.screenTitle}>What's your name?</Text>
+            </Animated.View>
+            <Animated.View entering={FadeIn.delay(300).duration(350)}>
+              <Text style={styles.screenDesc}>We'll use this to personalise your experience.</Text>
+            </Animated.View>
+            <Animated.View entering={FadeIn.delay(450).duration(350)}>
+              <TextInput
+                style={styles.nameInput}
+                placeholder="e.g. Fatima"
+                placeholderTextColor="rgba(107,107,107,0.4)"
+                value={data.userName}
+                onChangeText={v => update('userName', v)}
+                autoFocus
+                selectionColor={Colors.gold}
+                underlineColorAndroid="transparent"
+              />
+            </Animated.View>
+            <Animated.View entering={FadeIn.delay(550).duration(350)}>
+              <PrimaryBtn onPress={() => goTo(3)} disabled={!data.userName.trim()}>Continue →</PrimaryBtn>
+            </Animated.View>
           </View>
         );
 
@@ -186,22 +198,30 @@ export default function Onboarding() {
           <View style={styles.screenContent}>
             <BackButton />
             <Logo />
-            <Text style={styles.screenTitle}>And your partner's name?</Text>
-            <Text style={styles.screenDesc}>Optional — skip if you're starting alone.</Text>
-            <TextInput
-              style={styles.nameInput}
-              placeholder="e.g. Ahmed"
-              placeholderTextColor="rgba(107,107,107,0.4)"
-              value={data.partnerName}
-              onChangeText={v => update('partnerName', v)}
-              autoFocus
-              selectionColor={Colors.gold}
-              underlineColorAndroid="transparent"
-            />
-            <PrimaryBtn onPress={() => goTo(4)}>Continue →</PrimaryBtn>
-            <TouchableOpacity onPress={() => { update('partnerName', ''); goTo(4); }}>
-              <Text style={styles.skipText}>Skip for now</Text>
-            </TouchableOpacity>
+            <Animated.View entering={FadeIn.delay(150).duration(350)}>
+              <Text style={styles.screenTitle}>And your partner's name?</Text>
+            </Animated.View>
+            <Animated.View entering={FadeIn.delay(300).duration(350)}>
+              <Text style={styles.screenDesc}>Optional — skip if you're starting alone.</Text>
+            </Animated.View>
+            <Animated.View entering={FadeIn.delay(450).duration(350)}>
+              <TextInput
+                style={styles.nameInput}
+                placeholder="e.g. Ahmed"
+                placeholderTextColor="rgba(107,107,107,0.4)"
+                value={data.partnerName}
+                onChangeText={v => update('partnerName', v)}
+                autoFocus
+                selectionColor={Colors.gold}
+                underlineColorAndroid="transparent"
+              />
+            </Animated.View>
+            <Animated.View entering={FadeIn.delay(550).duration(350)}>
+              <PrimaryBtn onPress={() => goTo(4)}>Continue →</PrimaryBtn>
+              <TouchableOpacity onPress={() => { update('partnerName', ''); goTo(4); }}>
+                <Text style={styles.skipText}>Skip for now</Text>
+              </TouchableOpacity>
+            </Animated.View>
           </View>
         );
 
@@ -210,20 +230,30 @@ export default function Onboarding() {
           <ScrollView contentContainerStyle={styles.screenContent}>
             <BackButton />
             <Logo />
-            <Text style={styles.screenTitle}>When is the big day?</Text>
-            <Text style={styles.screenDesc}>Don't worry — you can update this anytime.</Text>
-            <OptionCard selected={data.dateOption === 'exact'} onPress={() => update('dateOption', 'exact')}>
-              <Text style={styles.optionTitle}>I have a date</Text>
-              <Text style={styles.optionSubtitle}>Pick your exact Nikah date</Text>
-            </OptionCard>
-            <OptionCard selected={data.dateOption === 'rough'} onPress={() => update('dateOption', 'rough')}>
-              <Text style={styles.optionTitle}>I have a rough idea</Text>
-              <Text style={styles.optionSubtitle}>Choose a season and year</Text>
-            </OptionCard>
-            <OptionCard selected={data.dateOption === 'deciding'} onPress={() => update('dateOption', 'deciding')}>
-              <Text style={styles.optionTitle}>Still deciding</Text>
-              <Text style={styles.optionSubtitle}>No pressure — skip for now</Text>
-            </OptionCard>
+            <Animated.View entering={FadeIn.delay(150).duration(350)}>
+              <Text style={styles.screenTitle}>When is the big day?</Text>
+            </Animated.View>
+            <Animated.View entering={FadeIn.delay(300).duration(350)}>
+              <Text style={styles.screenDesc}>Don't worry — you can update this anytime.</Text>
+            </Animated.View>
+            <Animated.View entering={FadeIn.delay(400).duration(350)}>
+              <OptionCard selected={data.dateOption === 'exact'} onPress={() => update('dateOption', 'exact')}>
+                <Text style={styles.optionTitle}>I have a date</Text>
+                <Text style={styles.optionSubtitle}>Pick your exact Nikah date</Text>
+              </OptionCard>
+            </Animated.View>
+            <Animated.View entering={FadeIn.delay(500).duration(350)}>
+              <OptionCard selected={data.dateOption === 'rough'} onPress={() => update('dateOption', 'rough')}>
+                <Text style={styles.optionTitle}>I have a rough idea</Text>
+                <Text style={styles.optionSubtitle}>Choose a season and year</Text>
+              </OptionCard>
+            </Animated.View>
+            <Animated.View entering={FadeIn.delay(600).duration(350)}>
+              <OptionCard selected={data.dateOption === 'deciding'} onPress={() => update('dateOption', 'deciding')}>
+                <Text style={styles.optionTitle}>Still deciding</Text>
+                <Text style={styles.optionSubtitle}>No pressure — skip for now</Text>
+              </OptionCard>
+            </Animated.View>
             {data.dateOption === 'exact' && (
               <TextInput
                 style={styles.dateInput}
@@ -239,10 +269,12 @@ export default function Onboarding() {
                 <Text style={styles.countdownLabel}>until your Nikah</Text>
               </View>
             )}
-            <PrimaryBtn
-              onPress={() => goTo(5)}
-              disabled={!data.dateOption || (data.dateOption === 'exact' && !data.nikahDate)}
-            >Continue →</PrimaryBtn>
+            <Animated.View entering={FadeIn.delay(700).duration(350)}>
+              <PrimaryBtn
+                onPress={() => goTo(5)}
+                disabled={!data.dateOption || (data.dateOption === 'exact' && !data.nikahDate)}
+              >Continue →</PrimaryBtn>
+            </Animated.View>
           </ScrollView>
         );
 
@@ -251,20 +283,28 @@ export default function Onboarding() {
           <ScrollView contentContainerStyle={styles.screenContent}>
             <BackButton />
             <Logo />
-            <Text style={styles.screenTitle}>What are you planning?</Text>
-            <Text style={styles.screenDesc}>This helps us show you what's most relevant.</Text>
-            {CEREMONY_OPTIONS.map(opt => (
-              <OptionCard key={opt.value} selected={data.ceremonyType === opt.value} onPress={() => update('ceremonyType', opt.value)}>
-                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
-                  <Text style={{ fontSize: 24, marginTop: 2 }}>{opt.icon}</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.optionTitle}>{opt.title}</Text>
-                    <Text style={styles.optionSubtitle}>{opt.subtitle}</Text>
+            <Animated.View entering={FadeIn.delay(150).duration(350)}>
+              <Text style={styles.screenTitle}>What are you planning?</Text>
+            </Animated.View>
+            <Animated.View entering={FadeIn.delay(300).duration(350)}>
+              <Text style={styles.screenDesc}>This helps us show you what's most relevant.</Text>
+            </Animated.View>
+            {CEREMONY_OPTIONS.map((opt, i) => (
+              <Animated.View key={opt.value} entering={FadeIn.delay(400 + i * 100).duration(350)}>
+                <OptionCard selected={data.ceremonyType === opt.value} onPress={() => update('ceremonyType', opt.value)}>
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+                    <Text style={{ fontSize: 24, marginTop: 2 }}>{opt.icon}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.optionTitle}>{opt.title}</Text>
+                      <Text style={styles.optionSubtitle}>{opt.subtitle}</Text>
+                    </View>
                   </View>
-                </View>
-              </OptionCard>
+                </OptionCard>
+              </Animated.View>
             ))}
-            <PrimaryBtn onPress={() => goTo(6)} disabled={!data.ceremonyType}>Continue →</PrimaryBtn>
+            <Animated.View entering={FadeIn.delay(750).duration(350)}>
+              <PrimaryBtn onPress={() => goTo(6)} disabled={!data.ceremonyType}>Continue →</PrimaryBtn>
+            </Animated.View>
           </ScrollView>
         );
 
@@ -273,19 +313,25 @@ export default function Onboarding() {
           <ScrollView contentContainerStyle={styles.screenContent}>
             <BackButton />
             <Logo />
-            <Text style={styles.screenTitle}>Where are you based?</Text>
-            <Text style={styles.screenDesc}>We'll show you venues and vendors near you.</Text>
-            <View style={styles.chipRow}>
-              {CITIES.map(c => (
-                <TouchableOpacity
-                  key={c}
-                  style={[styles.chip, data.city === c && styles.chipSelected]}
-                  onPress={() => update('city', c)}
-                >
-                  <Text style={[styles.chipText, data.city === c && styles.chipTextSelected]}>{c}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <Animated.View entering={FadeIn.delay(150).duration(350)}>
+              <Text style={styles.screenTitle}>Where are you based?</Text>
+            </Animated.View>
+            <Animated.View entering={FadeIn.delay(300).duration(350)}>
+              <Text style={styles.screenDesc}>We'll show you venues and vendors near you.</Text>
+            </Animated.View>
+            <Animated.View entering={FadeIn.delay(450).duration(350)}>
+              <View style={styles.chipRow}>
+                {CITIES.map(c => (
+                  <TouchableOpacity
+                    key={c}
+                    style={[styles.chip, data.city === c && styles.chipSelected]}
+                    onPress={() => update('city', c)}
+                  >
+                    <Text style={[styles.chipText, data.city === c && styles.chipTextSelected]}>{c}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </Animated.View>
             {data.city === 'Other' && (
               <TextInput
                 style={styles.dateInput}
@@ -296,10 +342,12 @@ export default function Onboarding() {
                 autoFocus
               />
             )}
-            <PrimaryBtn
-              onPress={() => goTo(7)}
-              disabled={!data.city || (data.city === 'Other' && !data.otherCity.trim())}
-            >Continue →</PrimaryBtn>
+            <Animated.View entering={FadeIn.delay(600).duration(350)}>
+              <PrimaryBtn
+                onPress={() => goTo(7)}
+                disabled={!data.city || (data.city === 'Other' && !data.otherCity.trim())}
+              >Continue →</PrimaryBtn>
+            </Animated.View>
           </ScrollView>
         );
 
@@ -308,17 +356,25 @@ export default function Onboarding() {
           <ScrollView contentContainerStyle={styles.screenContent}>
             <BackButton />
             <Logo />
-            <Text style={styles.screenTitle}>How many guests?</Text>
-            <Text style={styles.screenDesc}>A rough idea is fine — update anytime.</Text>
-            {GUEST_RANGES.map(g => (
-              <OptionCard key={g.value} selected={data.guestRange === g.value} onPress={() => update('guestRange', g.value)}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={styles.optionTitle}>{g.label}</Text>
-                  <Text style={styles.optionSubtitle}>{g.range}</Text>
-                </View>
-              </OptionCard>
+            <Animated.View entering={FadeIn.delay(150).duration(350)}>
+              <Text style={styles.screenTitle}>How many guests?</Text>
+            </Animated.View>
+            <Animated.View entering={FadeIn.delay(300).duration(350)}>
+              <Text style={styles.screenDesc}>A rough idea is fine — update anytime.</Text>
+            </Animated.View>
+            {GUEST_RANGES.map((g, i) => (
+              <Animated.View key={g.value} entering={FadeIn.delay(400 + i * 80).duration(350)}>
+                <OptionCard selected={data.guestRange === g.value} onPress={() => update('guestRange', g.value)}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text style={styles.optionTitle}>{g.label}</Text>
+                    <Text style={styles.optionSubtitle}>{g.range}</Text>
+                  </View>
+                </OptionCard>
+              </Animated.View>
             ))}
-            <PrimaryBtn onPress={() => goTo(8)} disabled={!data.guestRange}>Continue →</PrimaryBtn>
+            <Animated.View entering={FadeIn.delay(800).duration(350)}>
+              <PrimaryBtn onPress={() => goTo(8)} disabled={!data.guestRange}>Continue →</PrimaryBtn>
+            </Animated.View>
           </ScrollView>
         );
 
@@ -327,14 +383,20 @@ export default function Onboarding() {
           <View style={styles.screenContent}>
             <BackButton />
             <Logo />
-            <Text style={styles.screenTitle}>Planning together is better.</Text>
-            <Text style={styles.screenDesc}>
-              Invite your partner, friend or relative to your Our Nikkah space.
-            </Text>
-            <PrimaryBtn onPress={handleSendInvite}>Invite to Our Nikkah</PrimaryBtn>
-            <TouchableOpacity onPress={() => goTo(9)}>
-              <Text style={styles.skipText}>I'll do this later</Text>
-            </TouchableOpacity>
+            <Animated.View entering={FadeIn.delay(150).duration(350)}>
+              <Text style={styles.screenTitle}>Planning together is better.</Text>
+            </Animated.View>
+            <Animated.View entering={FadeIn.delay(300).duration(350)}>
+              <Text style={styles.screenDesc}>
+                Invite your partner, friend or relative to your Our Nikkah space.
+              </Text>
+            </Animated.View>
+            <Animated.View entering={FadeIn.delay(450).duration(350)}>
+              <PrimaryBtn onPress={handleSendInvite}>Invite to Our Nikkah</PrimaryBtn>
+              <TouchableOpacity onPress={() => goTo(9)}>
+                <Text style={styles.skipText}>I'll do this later</Text>
+              </TouchableOpacity>
+            </Animated.View>
           </View>
         );
 
@@ -342,49 +404,67 @@ export default function Onboarding() {
         return (
           <ScrollView contentContainerStyle={styles.screenContent}>
             <Logo />
-            <Text style={styles.screenTitle}>Save your Nikah plan.</Text>
-            <Text style={styles.screenDesc}>Create an account to access your plan from any device.</Text>
-            <TextInput
-              style={styles.dateInput}
-              placeholder="Email address"
-              placeholderTextColor={Colors.textSecondary}
-              value={accountEmail}
-              onChangeText={setAccountEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            <TextInput
-              style={styles.dateInput}
-              placeholder="Create a password"
-              placeholderTextColor={Colors.textSecondary}
-              value={accountPassword}
-              onChangeText={setAccountPassword}
-              secureTextEntry
-            />
-            <PrimaryBtn onPress={handleContinueAsGuest} disabled={isSubmitting}>
-              {accountEmail && accountPassword ? 'Create account' : 'Continue without an account'}
-            </PrimaryBtn>
+            <Animated.View entering={FadeIn.delay(150).duration(350)}>
+              <Text style={styles.screenTitle}>Save your Nikah plan.</Text>
+            </Animated.View>
+            <Animated.View entering={FadeIn.delay(300).duration(350)}>
+              <Text style={styles.screenDesc}>Create an account to access your plan from any device.</Text>
+            </Animated.View>
+            <Animated.View entering={FadeIn.delay(450).duration(350)}>
+              <TextInput
+                style={styles.dateInput}
+                placeholder="Email address"
+                placeholderTextColor={Colors.textSecondary}
+                value={accountEmail}
+                onChangeText={setAccountEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </Animated.View>
+            <Animated.View entering={FadeIn.delay(550).duration(350)}>
+              <TextInput
+                style={styles.dateInput}
+                placeholder="Create a password"
+                placeholderTextColor={Colors.textSecondary}
+                value={accountPassword}
+                onChangeText={setAccountPassword}
+                secureTextEntry
+              />
+            </Animated.View>
+            <Animated.View entering={FadeIn.delay(650).duration(350)}>
+              <PrimaryBtn onPress={handleContinueAsGuest} disabled={isSubmitting}>
+                {accountEmail && accountPassword ? 'Create account' : 'Continue without an account'}
+              </PrimaryBtn>
+            </Animated.View>
           </ScrollView>
         );
 
       case 10:
         return (
           <View style={styles.centered}>
-            <View style={styles.sparkleCircle}>
-              <Ionicons name="sparkles" size={40} color={Colors.gold} />
-            </View>
-            <Text style={styles.heroTitle}>
-              Assalamu Alaykum,{'\n'}{data.userName}{data.partnerName ? ` & ${data.partnerName}` : ''}
-            </Text>
-            {daysUntil && (
-              <Text style={styles.heroSubtitle}>
-                Your Nikah is in <Text style={{ fontWeight: '700', color: Colors.gold }}>{daysUntil} days.</Text>
+            <Animated.View entering={FadeIn.delay(200).duration(500)}>
+              <View style={styles.sparkleCircle}>
+                <Ionicons name="sparkles" size={40} color={Colors.gold} />
+              </View>
+            </Animated.View>
+            <Animated.View entering={FadeIn.delay(500).duration(500)}>
+              <Text style={styles.heroTitle}>
+                Assalamu Alaykum,{'\n'}{data.userName}{data.partnerName ? ` & ${data.partnerName}` : ''}
               </Text>
+            </Animated.View>
+            {daysUntil && (
+              <Animated.View entering={FadeIn.delay(800).duration(400)}>
+                <Text style={styles.heroSubtitle}>
+                  Your Nikah is in <Text style={{ fontWeight: '700', color: Colors.gold }}>{daysUntil} days.</Text>
+                </Text>
+              </Animated.View>
             )}
-            <Text style={styles.heroSubtitle}>Let's make it beautiful.</Text>
-            <View style={{ width: '100%', marginTop: 48 }}>
+            <Animated.View entering={FadeIn.delay(1000).duration(400)}>
+              <Text style={styles.heroSubtitle}>Let's make it beautiful.</Text>
+            </Animated.View>
+            <Animated.View entering={FadeIn.delay(1300).duration(400)} style={{ width: '100%', marginTop: 48 }}>
               <PrimaryBtn onPress={() => router.replace('/(tabs)/home')}>Open My Plan →</PrimaryBtn>
-            </View>
+            </Animated.View>
           </View>
         );
 

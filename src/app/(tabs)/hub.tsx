@@ -16,6 +16,7 @@ import {
     View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import FadeScreen from '@/components/FadeScreen';
 import Svg, { Circle, G } from 'react-native-svg';
 import Slider from '@react-native-community/slider';
 
@@ -839,6 +840,7 @@ export default function HubTab() {
   if (!workspaceId) return null;
 
   return (
+    <FadeScreen>
     <LinearGradient {...GradientConfig} style={{ flex: 1 }}>
       <SafeAreaView style={styles.container} edges={['top']}>
         <ScrollView contentContainerStyle={styles.hubScroll}>
@@ -863,6 +865,7 @@ export default function HubTab() {
         </ScrollView>
       </SafeAreaView>
     </LinearGradient>
+    </FadeScreen>
   );
 }
 

@@ -13,6 +13,7 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import FadeScreen from '@/components/FadeScreen';
 
 export default function SummaryTab() {
   const router = useRouter();
@@ -46,6 +47,7 @@ export default function SummaryTab() {
   const countdown = summary?.nikahCountdownDays;
 
   return (
+    <FadeScreen>
     <LinearGradient {...GradientConfig} style={{ flex: 1 }}>
       <SafeAreaView style={styles.container} edges={['top']}>
         <ScrollView
@@ -248,6 +250,7 @@ export default function SummaryTab() {
       </Modal>
       </SafeAreaView>
     </LinearGradient>
+    </FadeScreen>
   );
 }
 

@@ -36,11 +36,11 @@ export default function RootLayout() {
 
   return (
     <WorkspaceProvider>
-      <Stack screenOptions={{ headerShown: false }}>
+      <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
         <Stack.Screen name="index" />
-        <Stack.Screen name="auth" />
-        <Stack.Screen name="onboarding" />
-        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="auth" options={{ animation: 'fade_from_bottom' }} />
+        <Stack.Screen name="onboarding" options={{ animation: 'fade_from_bottom' }} />
+        <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
         <Stack.Screen name="notes/index" options={{ headerShown: true, title: 'Notes', headerBackTitle: 'Back' }} />
         <Stack.Screen name="notes/new" options={{ headerShown: true, title: 'New Note', headerBackTitle: 'Back' }} />
         <Stack.Screen name="notes/[id]" options={{ headerShown: true, title: 'Edit Note', headerBackTitle: 'Back' }} />

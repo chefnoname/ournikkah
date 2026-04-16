@@ -15,6 +15,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import FadeScreen from '@/components/FadeScreen';
 
 const QUICK_ACTIONS = [
   { label: 'Venues', icon: 'business-outline' as const, tab: 'directory', params: { section: 'venue' } },
@@ -103,6 +104,7 @@ export default function HomeTab() {
   const collaborators = members.filter(m => m.role === 'collaborator');
 
   return (
+    <FadeScreen>
     <LinearGradient {...GradientConfig} style={{ flex: 1 }}>
       <SafeAreaView style={styles.container} edges={['top']}>
         <ScrollView
@@ -203,6 +205,7 @@ export default function HomeTab() {
       </ScrollView>
       </SafeAreaView>
     </LinearGradient>
+    </FadeScreen>
   );
 }
 
