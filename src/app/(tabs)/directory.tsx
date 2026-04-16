@@ -35,6 +35,7 @@ const VENDOR_SUBS = [
   { value: 'caterer', label: 'Caterers' },
   { value: 'decorator', label: 'Decorators' },
   { value: 'mua', label: 'MUA' },
+  { value: 'dj', label: 'DJs & Entertainment' },
 ];
 
 export default function DirectoryTab() {

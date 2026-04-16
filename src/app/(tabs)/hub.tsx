@@ -1,26 +1,47 @@
+import FadeScreen from '@/components/FadeScreen';
 import { BorderRadius, Colors, FontFamily, FontSize, GradientConfig, Spacing } from '@/constants/theme';
 import { api, buildUrl, toAbsoluteUrl } from '@/lib/api';
 import { fetchWithAuth } from '@/lib/fetchWithAuth';
-import type { BudgetItem, GuestInvite, SavedVendor } from '@/lib/types';
+import type { BudgetItem, GuestInvite, SavedVendor, VendorItem } from '@/lib/types';
 import { useWorkspace } from '@/lib/useWorkspace';
 import { Ionicons } from '@expo/vector-icons';
+import Slider from '@react-native-community/slider';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-    ActivityIndicator, Alert,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text, TextInput, TouchableOpacity,
-    View
+  ActivityIndicator, Alert,
+  Dimensions,
+  Linking,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text, TextInput, TouchableOpacity,
+  View
 } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import FadeScreen from '@/components/FadeScreen';
 import Svg, { Circle, G } from 'react-native-svg';
-import Slider from '@react-native-community/slider';
 
-type SavedVendorWithItem = SavedVendor & { vendorItem?: any };
+type SavedVendorWithItem = SavedVendor & { vendorItem?: VendorItem };
+
+const CATEGORY_LABELS: Record<string, string> = {
+  hotel: 'Hotels',
+  hall: 'Halls',
+  mosque: 'Mosques',
+  photographer: 'Photographers',
+  caterer: 'Caterers',
+  decorator: 'Decorators',
+  mua: 'Hair & Makeup',
+  dj: 'DJs & Entertainment',
+};
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const CARD_WIDTH = SCREEN_WIDTH - 48; // Full width minus hub padding
 
 const STATUS_OPTIONS = [
   { value: 'saved', label: 'Saved', bg: '#F3F4F6', fg: '#6B6B6B' },
@@ -115,12 +136,229 @@ function DonutChart({
   );
 }
 
+// --- StatusPill Component ---
+function StatusPill({
+  currentStatus,
+  onStatusChange,
+}: {
+  currentStatus: string;
+  onStatusChange: (status: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const current = STATUS_OPTIONS.find(s => s.value === (currentStatus || 'saved')) || STATUS_OPTIONS[0];
+
+  return (
+    <View
+      onStartShouldSetResponder={() => true}
+      onTouchEnd={(e) => e.stopPropagation()}
+    >
+      <TouchableOpacity
+        style={[styles.statusPill, { backgroundColor: current.bg }]}
+        onPress={() => setOpen(true)}
+        activeOpacity={0.7}
+      >
+        <Text style={[styles.statusPillText, { color: current.fg }]}>{current.label}</Text>
+        <Ionicons name="chevron-down" size={10} color={current.fg} />
+      </TouchableOpacity>
+
+      <Modal visible={open} transparent animationType="fade">
+        <TouchableOpacity
+          style={styles.statusModalOverlay}
+          activeOpacity={1}
+          onPress={() => setOpen(false)}
+        >
+          <View style={styles.statusModalCard}>
+            <Text style={styles.statusModalTitle}>Update Status</Text>
+            {STATUS_OPTIONS.map(opt => (
+              <TouchableOpacity
+                key={opt.value}
+                style={[
+                  styles.statusModalOption,
+                  opt.value === currentStatus && { backgroundColor: opt.bg },
+                ]}
+                onPress={() => {
+                  setOpen(false);
+                  onStatusChange(opt.value);
+                }}
+              >
+                {opt.value === 'booked' && (
+                  <Ionicons name="checkmark-circle" size={16} color={opt.fg} />
+                )}
+                <Text style={[styles.statusModalOptionText, { color: opt.value === currentStatus ? opt.fg : Colors.text }]}>
+                  {opt.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </View>
+  );
+}
+
+// --- SavedCard Component ---
+function SavedCard({
+  sv,
+  isExpanded,
+  onToggle,
+  onStatusChange,
+  onViewDetails,
+}: {
+  sv: SavedVendorWithItem;
+  isExpanded: boolean;
+  onToggle: () => void;
+  onStatusChange: (vendorItemId: number, status: string) => void;
+  onViewDetails: (sv: SavedVendorWithItem) => void;
+}) {
+  const item = sv.vendorItem;
+  const expandHeight = useSharedValue(0);
+  const chevronRotation = useSharedValue(0);
+
+  useEffect(() => {
+    expandHeight.value = withTiming(isExpanded ? 1 : 0, { duration: 250 });
+    chevronRotation.value = withTiming(isExpanded ? 180 : 0, { duration: 250 });
+  }, [isExpanded]);
+
+  const expandStyle = useAnimatedStyle(() => ({
+    maxHeight: expandHeight.value * 500,
+    opacity: expandHeight.value,
+    overflow: 'hidden' as const,
+  }));
+
+  const chevronStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${chevronRotation.value}deg` }],
+  }));
+
+  const monogram = item?.title?.charAt(0) || '?';
+
+  return (
+    <View style={[styles.savedCard, { width: CARD_WIDTH }]}>
+      <TouchableOpacity onPress={onToggle} activeOpacity={0.9}>
+        {/* Hero Image Area */}
+        <View style={styles.cardHero}>
+          <LinearGradient
+            colors={['#E8C4B8', '#FDF3E3']}
+            style={StyleSheet.absoluteFill}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          />
+          <Text style={styles.cardMonogram}>{monogram}</Text>
+
+          {/* Price badge top-right */}
+          {item?.priceRange && (
+            <View style={styles.cardPriceBadge}>
+              <Text style={styles.cardPriceBadgeText}>{item.priceRange}</Text>
+            </View>
+          )}
+
+          {/* Bottom gradient overlay with title */}
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.55)']}
+            style={styles.cardHeroOverlay}
+          >
+            <Text style={styles.cardTitle} numberOfLines={1}>{item?.title}</Text>
+            {item?.location && (
+              <View style={styles.cardLocationRow}>
+                <Ionicons name="location" size={12} color="rgba(255,255,255,0.8)" />
+                <Text style={styles.cardLocationText} numberOfLines={1}>{item.location}</Text>
+              </View>
+            )}
+          </LinearGradient>
+        </View>
+
+        {/* Status + Chevron row */}
+        <View style={styles.cardStatusRow}>
+          <StatusPill
+            currentStatus={sv.contactStatus || 'saved'}
+            onStatusChange={(status) => onStatusChange(sv.vendorItemId, status)}
+          />
+          <Animated.View style={chevronStyle}>
+            <Ionicons name="chevron-down" size={18} color={Colors.textSecondary} />
+          </Animated.View>
+        </View>
+      </TouchableOpacity>
+
+      {/* Expanded Content */}
+      <Animated.View style={expandStyle}>
+        <View style={styles.cardExpandedContent}>
+          {/* Bio */}
+          {item?.bio && (
+            <Text style={styles.cardBio}>{item.bio}</Text>
+          )}
+
+          {/* Capacity & Specialty badges */}
+          <View style={styles.cardBadgeRow}>
+            {item?.capacity && (
+              <View style={styles.cardGoldBadge}>
+                <Ionicons name="people" size={12} color={Colors.gold} />
+                <Text style={styles.cardGoldBadgeText}>{item.capacity}</Text>
+              </View>
+            )}
+            {item?.specialty && (
+              <View style={styles.cardGreyBadge}>
+                <Text style={styles.cardGreyBadgeText}>{item.specialty}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Feature tags */}
+          {item?.features && item.features.length > 0 && (
+            <View style={styles.cardFeatureRow}>
+              {item.features.map((f, i) => (
+                <View key={i} style={styles.cardFeatureTag}>
+                  <Ionicons name="checkmark" size={10} color="#4A9B7F" />
+                  <Text style={styles.cardFeatureTagText}>{f}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* Contact buttons */}
+          <View style={styles.cardContactRow}>
+            {item?.contactPhone && (
+              <TouchableOpacity
+                style={styles.cardCallBtn}
+                onPress={() => Linking.openURL(`tel:${item.contactPhone}`)}
+              >
+                <Ionicons name="call" size={14} color="#fff" />
+                <Text style={styles.cardCallBtnText}>Call</Text>
+              </TouchableOpacity>
+            )}
+            {item?.contactEmail && (
+              <TouchableOpacity
+                style={styles.cardEmailBtn}
+                onPress={() => Linking.openURL(`mailto:${item.contactEmail}`)}
+              >
+                <Ionicons name="mail" size={14} color={Colors.text} />
+                <Text style={styles.cardEmailBtnText}>Email</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* View Details button */}
+          <TouchableOpacity
+            style={styles.cardViewDetailsBtn}
+            onPress={() => onViewDetails(sv)}
+          >
+            <Text style={styles.cardViewDetailsBtnText}>View Details</Text>
+            <Ionicons name="chevron-forward" size={14} color={Colors.gold} />
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
+    </View>
+  );
+}
+
 // --- Saved Tab ---
 function SavedTab({ workspaceId, refreshKey }: { workspaceId: number; refreshKey: number }) {
   const [vendors, setVendors] = useState<SavedVendorWithItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusModal, setStatusModal] = useState<SavedVendorWithItem | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [cardIndex, setCardIndex] = useState(0);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<SavedVendorWithItem | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
 
   const fetch_ = useCallback(async () => {
     try {
@@ -144,7 +382,6 @@ function SavedTab({ workspaceId, refreshKey }: { workspaceId: number; refreshKey
       if (contactStatus === 'booked') Alert.alert('🎉 Finalised!', 'This choice has been saved to your Summary.');
       fetch_();
     } catch { Alert.alert('Error', 'Failed to update status.'); }
-    setStatusModal(null);
   };
 
   const handleRemove = (sv: SavedVendorWithItem) => {
@@ -175,6 +412,64 @@ function SavedTab({ workspaceId, refreshKey }: { workspaceId: number; refreshKey
     );
   };
 
+  // Group by category
+  const grouped = useMemo(() => {
+    const map: Record<string, SavedVendorWithItem[]> = {};
+    vendors.forEach((sv) => {
+      const cat = sv.vendorItem?.vendorCategory || 'other';
+      if (!map[cat]) map[cat] = [];
+      map[cat].push(sv);
+    });
+    return map;
+  }, [vendors]);
+
+  const categoryKeys = useMemo(() => Object.keys(grouped).sort(), [grouped]);
+
+  // Default to first category
+  useEffect(() => {
+    if (categoryKeys.length > 0 && (!activeCategory || !categoryKeys.includes(activeCategory))) {
+      setActiveCategory(categoryKeys[0]);
+    }
+  }, [categoryKeys]);
+
+  const currentItems = activeCategory ? (grouped[activeCategory] || []) : [];
+
+  // Reset carousel when category changes
+  useEffect(() => {
+    setCardIndex(0);
+    setExpandedId(null);
+    scrollRef.current?.scrollTo({ x: 0, animated: false });
+  }, [activeCategory]);
+
+  // Clamp cardIndex when items change
+  useEffect(() => {
+    if (currentItems.length > 0 && cardIndex >= currentItems.length) {
+      setCardIndex(currentItems.length - 1);
+    }
+  }, [currentItems.length]);
+
+  // Snap to nearest card — forces focus if 30%+ of the next card is visible
+  const handleScrollEnd = useCallback((e: { nativeEvent: { contentOffset: { x: number } } }) => {
+    const offsetX = e.nativeEvent.contentOffset.x;
+    const rawIndex = offsetX / CARD_WIDTH;
+    // If 30% or more of the next card is showing, snap forward; otherwise snap back
+    const newIndex = Math.max(0, Math.min(
+      currentItems.length - 1,
+      rawIndex % 1 >= 0.3 ? Math.ceil(rawIndex) : Math.floor(rawIndex)
+    ));
+    if (newIndex !== cardIndex) {
+      setExpandedId(null);
+    }
+    setCardIndex(newIndex);
+    scrollRef.current?.scrollTo({ x: newIndex * CARD_WIDTH, animated: true });
+  }, [cardIndex, currentItems.length]);
+
+  const scrollToIndex = (index: number) => {
+    setCardIndex(index);
+    setExpandedId(null);
+    scrollRef.current?.scrollTo({ x: index * CARD_WIDTH, animated: true });
+  };
+
   if (loading) return <ActivityIndicator style={{ marginTop: 40 }} color={Colors.gold} />;
   if (vendors.length === 0) return (
     <View style={styles.emptyState}>
@@ -185,45 +480,89 @@ function SavedTab({ workspaceId, refreshKey }: { workspaceId: number; refreshKey
 
   return (
     <>
-      <View style={styles.savedGrid}>
-        {vendors.map(sv => {
-          const current = STATUS_OPTIONS.find(s => s.value === (sv.contactStatus || 'saved')) || STATUS_OPTIONS[0];
-          return (
-            <TouchableOpacity key={sv.id} style={styles.savedCard} onPress={() => setDetailItem(sv)} activeOpacity={0.8}>
-              <View style={styles.savedCardImage}>
-                <Text style={styles.savedCardInitial}>{sv.vendorItem?.title?.charAt(0) || '?'}</Text>
-              </View>
-              <Text style={styles.savedCardTitle} numberOfLines={1}>{sv.vendorItem?.title}</Text>
-              <TouchableOpacity
-                style={[styles.statusPill, { backgroundColor: current.bg }]}
-                onPress={() => setStatusModal(sv)}
-              >
-                <Text style={[styles.statusPillText, { color: current.fg }]}>{current.label}</Text>
-              </TouchableOpacity>
-            </TouchableOpacity>
-          );
-        })}
+      {/* Category Breadcrumb Filter */}
+      <View style={styles.categoryFilterRow}>
+        <Text style={styles.categoryBreadcrumbLabel}>Saved</Text>
+        <Ionicons name="chevron-forward" size={14} color={Colors.textSecondary} />
+        <View style={{ position: 'relative' }}>
+          <TouchableOpacity
+            style={styles.categoryDropdownTrigger}
+            onPress={() => setDropdownOpen(!dropdownOpen)}
+          >
+            <Text style={styles.categoryDropdownTriggerText}>
+              {activeCategory ? (CATEGORY_LABELS[activeCategory] || activeCategory) : 'Select'}
+            </Text>
+            <Ionicons name="chevron-down" size={12} color={Colors.gold} />
+          </TouchableOpacity>
+
+          {dropdownOpen && (
+            <View style={styles.categoryDropdownMenu}>
+              {categoryKeys.map(key => (
+                <TouchableOpacity
+                  key={key}
+                  style={[
+                    styles.categoryDropdownOption,
+                    key === activeCategory && styles.categoryDropdownOptionActive,
+                  ]}
+                  onPress={() => {
+                    setActiveCategory(key);
+                    setDropdownOpen(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.categoryDropdownOptionText,
+                    key === activeCategory && styles.categoryDropdownOptionTextActive,
+                  ]}>
+                    {CATEGORY_LABELS[key] || key} ({grouped[key].length})
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
       </View>
 
-      <Modal visible={!!statusModal} transparent animationType="fade">
-        <TouchableOpacity style={styles.modalOverlay} onPress={() => setStatusModal(null)} activeOpacity={1}>
-          <View style={styles.statusModalCard}>
-            <Text style={styles.statusModalTitle}>Update Status</Text>
-            {STATUS_OPTIONS.map(opt => (
-              <TouchableOpacity
-                key={opt.value}
-                style={[styles.statusOption, { backgroundColor: opt.value === statusModal?.contactStatus ? opt.bg : 'transparent' }]}
-                onPress={() => statusModal && updateStatus(statusModal.vendorItemId, opt.value)}
-              >
-                <Text style={[styles.statusOptionText, { color: opt.value === statusModal?.contactStatus ? opt.fg : Colors.text }]}>
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
+      {/* Card Carousel */}
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={handleScrollEnd}
+        onScrollEndDrag={handleScrollEnd}
+        snapToInterval={CARD_WIDTH}
+        decelerationRate="fast"
+        style={styles.carouselContainer}
+        contentContainerStyle={{ paddingRight: 0 }}
+      >
+        {currentItems.map((sv) => (
+          <SavedCard
+            key={sv.id}
+            sv={sv}
+            isExpanded={expandedId === sv.id}
+            onToggle={() => setExpandedId(expandedId === sv.id ? null : sv.id)}
+            onStatusChange={updateStatus}
+            onViewDetails={setDetailItem}
+          />
+        ))}
+      </ScrollView>
 
+      {/* Dot Indicators */}
+      {currentItems.length > 1 && (
+        <View style={styles.dotRow}>
+          {currentItems.map((_, i) => (
+            <TouchableOpacity
+              key={i}
+              onPress={() => scrollToIndex(i)}
+              style={[
+                styles.dot,
+                i === cardIndex ? styles.dotActive : styles.dotInactive,
+              ]}
+            />
+          ))}
+        </View>
+      )}
+
+      {/* Detail Modal (preserved for full info + remove) */}
       <Modal visible={!!detailItem} animationType="slide" presentationStyle="pageSheet">
         {detailItem && (
           <SafeAreaView style={styles.detailModalContainer}>
@@ -304,7 +643,11 @@ function SavedTab({ workspaceId, refreshKey }: { workspaceId: number; refreshKey
                   return (
                     <TouchableOpacity
                       style={[styles.detailStatusBtn, { backgroundColor: current.bg, flex: 1 }]}
-                      onPress={() => { setDetailItem(null); setStatusModal(detailItem); }}
+                      onPress={() => {
+                        const currentIdx = STATUS_OPTIONS.findIndex(s => s.value === (detailItem.contactStatus || 'saved'));
+                        const nextIdx = (currentIdx + 1) % STATUS_OPTIONS.length;
+                        updateStatus(detailItem.vendorItemId, STATUS_OPTIONS[nextIdx].value);
+                      }}
                     >
                       <Ionicons name="flag-outline" size={18} color={current.fg} />
                       <Text style={[styles.detailStatusBtnText, { color: current.fg }]}>{current.label} — Tap to update</Text>
@@ -878,20 +1221,60 @@ const styles = StyleSheet.create({
   hubTabActive: { backgroundColor: Colors.primary },
   hubTabText: { fontSize: FontSize.md, fontFamily: FontFamily.sansMedium, color: Colors.textSecondary },
   hubTabTextActive: { color: '#fff' },
-  // Saved
-  savedGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  savedCard: { width: '48%', backgroundColor: Colors.surface, borderRadius: BorderRadius.xl, padding: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12 },
-  savedCardImage: { height: 96, borderRadius: 12, backgroundColor: Colors.goldLight, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
-  savedCardInitial: { fontSize: 24, fontWeight: '700', color: Colors.gold },
-  savedCardTitle: { fontSize: FontSize.md, fontFamily: FontFamily.sansSemiBold, color: Colors.text, marginBottom: 8 },
-  statusPill: { borderRadius: BorderRadius.full, paddingVertical: 4, alignItems: 'center' },
-  statusPillText: { fontSize: 10, fontWeight: '500' },
-  // Status Modal
-  modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.4)' },
+  // Saved — Category Filter
+  categoryFilterRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 },
+  categoryBreadcrumbLabel: { fontSize: FontSize.md, fontFamily: FontFamily.sans, color: Colors.textSecondary },
+  categoryDropdownTrigger: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: BorderRadius.full, backgroundColor: Colors.surface },
+  categoryDropdownTriggerText: { fontSize: FontSize.md, fontFamily: FontFamily.sansSemiBold, color: Colors.gold },
+  categoryDropdownMenu: { position: 'absolute', top: 36, left: 0, minWidth: 180, backgroundColor: Colors.surface, borderRadius: BorderRadius.lg, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 16, elevation: 8, zIndex: 100, padding: 4 },
+  categoryDropdownOption: { paddingVertical: 10, paddingHorizontal: 14, borderRadius: BorderRadius.md },
+  categoryDropdownOptionActive: { backgroundColor: Colors.goldLight },
+  categoryDropdownOptionText: { fontSize: FontSize.md, fontFamily: FontFamily.sans, color: Colors.text },
+  categoryDropdownOptionTextActive: { color: Colors.gold, fontFamily: FontFamily.sansSemiBold },
+  // Saved — Carousel
+  carouselContainer: { marginHorizontal: -Spacing.lg },
+  // Saved — Card
+  savedCard: { backgroundColor: Colors.surface, borderRadius: BorderRadius.xl, overflow: 'hidden', marginHorizontal: Spacing.lg, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 16 },
+  cardHero: { height: 176, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  cardMonogram: { fontSize: 56, fontFamily: FontFamily.serifBold, color: 'rgba(255,255,255,0.6)' },
+  cardPriceBadge: { position: 'absolute', top: 12, right: 12, backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: BorderRadius.full, paddingHorizontal: 10, paddingVertical: 4 },
+  cardPriceBadgeText: { fontSize: 11, fontWeight: '600', color: Colors.text },
+  cardHeroOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 16, paddingBottom: 14, paddingTop: 40 },
+  cardTitle: { fontSize: FontSize.xl, fontFamily: FontFamily.serifBold, color: '#fff' },
+  cardLocationRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  cardLocationText: { fontSize: FontSize.sm, fontFamily: FontFamily.sans, color: 'rgba(255,255,255,0.8)' },
+  cardStatusRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
+  // Saved — StatusPill
+  statusPill: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: BorderRadius.full, paddingHorizontal: 12, paddingVertical: 6 },
+  statusPillText: { fontSize: 11, fontWeight: '600' },
+  statusModalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.4)' },
   statusModalCard: { backgroundColor: Colors.surface, borderRadius: BorderRadius.xl, padding: Spacing.md, width: '80%', gap: 4 },
   statusModalTitle: { fontSize: FontSize.base, fontWeight: '600', color: Colors.text, marginBottom: 8 },
-  statusOption: { paddingVertical: 10, paddingHorizontal: 12, borderRadius: 12 },
-  statusOptionText: { fontSize: FontSize.md, fontWeight: '500' },
+  statusModalOption: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 12 },
+  statusModalOptionText: { fontSize: FontSize.md, fontWeight: '500' },
+  // Saved — Card Expanded
+  cardExpandedContent: { paddingHorizontal: 16, paddingBottom: 16, gap: 12 },
+  cardBio: { fontSize: FontSize.md, fontFamily: FontFamily.sans, color: Colors.textSecondary, lineHeight: 22 },
+  cardBadgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  cardGoldBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: BorderRadius.full, backgroundColor: Colors.goldLight, paddingHorizontal: 10, paddingVertical: 5 },
+  cardGoldBadgeText: { fontSize: FontSize.xs, fontWeight: '500', color: Colors.gold },
+  cardGreyBadge: { borderRadius: BorderRadius.full, backgroundColor: '#F3F4F6', paddingHorizontal: 10, paddingVertical: 5 },
+  cardGreyBadgeText: { fontSize: FontSize.xs, fontWeight: '500', color: Colors.textSecondary },
+  cardFeatureRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  cardFeatureTag: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: BorderRadius.full, backgroundColor: '#E8F4F0', paddingHorizontal: 10, paddingVertical: 5 },
+  cardFeatureTagText: { fontSize: FontSize.xs, fontWeight: '500', color: '#4A9B7F' },
+  cardContactRow: { flexDirection: 'row', gap: 10 },
+  cardCallBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: BorderRadius.full, backgroundColor: Colors.primary, paddingVertical: 12 },
+  cardCallBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.sansSemiBold, color: '#fff' },
+  cardEmailBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: BorderRadius.full, borderWidth: 1, borderColor: 'rgba(26,26,26,0.15)', paddingVertical: 12 },
+  cardEmailBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.sansSemiBold, color: Colors.text },
+  cardViewDetailsBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 8 },
+  cardViewDetailsBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.sansMedium, color: Colors.gold },
+  // Saved — Dots
+  dotRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: 12 },
+  dot: { borderRadius: BorderRadius.full, height: 6 },
+  dotActive: { width: 24, backgroundColor: Colors.gold },
+  dotInactive: { width: 6, backgroundColor: '#D1D5DB' },
   // Budget
   budgetCard: { backgroundColor: Colors.surface, borderRadius: BorderRadius.xl, padding: Spacing.lg, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12 },
   budgetLabel: { fontSize: FontSize.md, fontFamily: FontFamily.sansMedium, color: Colors.text, marginBottom: 12 },

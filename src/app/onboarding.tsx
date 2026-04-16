@@ -3,17 +3,20 @@ import { api, buildUrl, toAbsoluteUrl } from '@/lib/api';
 import { fetchWithAuth } from '@/lib/fetchWithAuth';
 import { useWorkspace } from '@/lib/useWorkspace';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator, Alert,
-  ScrollView,
+  Modal,
+  Platform,
   StyleSheet,
   Text, TextInput, TouchableOpacity,
   View
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import Animated, { FadeIn, FadeOut, SlideInLeft, SlideInRight, SlideOutLeft, SlideOutRight } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -51,6 +54,7 @@ export default function Onboarding() {
   });
   const [accountEmail, setAccountEmail] = useState('');
   const [accountPassword, setAccountPassword] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const update = (field: string, value: any) => setData(prev => ({ ...prev, [field]: value }));
   const goTo = useCallback((n: number) => {
@@ -124,6 +128,23 @@ export default function Onboarding() {
     </TouchableOpacity>
   );
 
+  const NavRow = ({ onContinue, disabled }: { onContinue: () => void; disabled?: boolean }) => (
+    <View style={styles.navRow}>
+      <TouchableOpacity style={styles.backButton} onPress={() => goTo(screen - 1)}>
+        <Ionicons name="chevron-back" size={20} color={Colors.text} />
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.continueBtn, disabled && styles.btnDisabled]}
+        onPress={onContinue}
+        disabled={disabled}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.continueBtnText}>Continue</Text>
+        <Ionicons name="chevron-forward" size={16} color={Colors.text} />
+      </TouchableOpacity>
+    </View>
+  );
+
   const Logo = () => <Text style={styles.logo}>MyNikkah</Text>;
 
   const PrimaryBtn = ({ onPress, disabled, children }: { onPress: () => void; disabled?: boolean; children: string }) => (
@@ -166,8 +187,8 @@ export default function Onboarding() {
 
       case 2:
         return (
-          <View style={styles.screenContent}>
-            <BackButton />
+          <KeyboardAwareScrollView contentContainerStyle={styles.screenContent}>
+            <NavRow onContinue={() => goTo(3)} disabled={!data.userName.trim()} />
             <Logo />
             <Animated.View entering={FadeIn.delay(150).duration(350)}>
               <Text style={styles.screenTitle}>What's your name?</Text>
@@ -187,16 +208,13 @@ export default function Onboarding() {
                 underlineColorAndroid="transparent"
               />
             </Animated.View>
-            <Animated.View entering={FadeIn.delay(550).duration(350)}>
-              <PrimaryBtn onPress={() => goTo(3)} disabled={!data.userName.trim()}>Continue →</PrimaryBtn>
-            </Animated.View>
-          </View>
+          </KeyboardAwareScrollView>
         );
 
       case 3:
         return (
-          <View style={styles.screenContent}>
-            <BackButton />
+          <KeyboardAwareScrollView contentContainerStyle={styles.screenContent}>
+            <NavRow onContinue={() => goTo(4)} />
             <Logo />
             <Animated.View entering={FadeIn.delay(150).duration(350)}>
               <Text style={styles.screenTitle}>And your partner's name?</Text>
@@ -217,18 +235,20 @@ export default function Onboarding() {
               />
             </Animated.View>
             <Animated.View entering={FadeIn.delay(550).duration(350)}>
-              <PrimaryBtn onPress={() => goTo(4)}>Continue →</PrimaryBtn>
               <TouchableOpacity onPress={() => { update('partnerName', ''); goTo(4); }}>
                 <Text style={styles.skipText}>Skip for now</Text>
               </TouchableOpacity>
             </Animated.View>
-          </View>
+          </KeyboardAwareScrollView>
         );
 
       case 4:
         return (
-          <ScrollView contentContainerStyle={styles.screenContent}>
-            <BackButton />
+          <KeyboardAwareScrollView contentContainerStyle={styles.screenContent}>
+            <NavRow
+              onContinue={() => goTo(5)}
+              disabled={!data.dateOption || (data.dateOption === 'exact' && !data.nikahDate)}
+            />
             <Logo />
             <Animated.View entering={FadeIn.delay(150).duration(350)}>
               <Text style={styles.screenTitle}>When is the big day?</Text>
@@ -255,33 +275,63 @@ export default function Onboarding() {
               </OptionCard>
             </Animated.View>
             {data.dateOption === 'exact' && (
-              <TextInput
-                style={styles.dateInput}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={Colors.textSecondary}
-                value={data.nikahDate}
-                onChangeText={v => update('nikahDate', v)}
+              <TouchableOpacity style={styles.datePickerBtn} onPress={() => setShowDatePicker(true)} activeOpacity={0.8}>
+                <Text style={data.nikahDate ? styles.datePickerText : styles.datePickerPlaceholder}>
+                  {data.nikahDate
+                    ? new Date(data.nikahDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+                    : 'Select a date'}
+                </Text>
+                <Ionicons name="calendar-outline" size={20} color={Colors.gold} />
+              </TouchableOpacity>
+            )}
+            {Platform.OS === 'android' && showDatePicker && (
+              <DateTimePicker
+                value={data.nikahDate ? new Date(data.nikahDate) : new Date()}
+                mode="date"
+                display="default"
+                minimumDate={new Date()}
+                onChange={(_, date) => {
+                  setShowDatePicker(false);
+                  if (date) update('nikahDate', date.toISOString());
+                }}
               />
+            )}
+            {Platform.OS === 'ios' && showDatePicker && (
+              <Modal transparent animationType="slide">
+                <View style={styles.dateModalOverlay}>
+                  <View style={styles.dateModalSheet}>
+                    <TouchableOpacity style={styles.dateModalDone} onPress={() => setShowDatePicker(false)}>
+                      <Text style={styles.dateModalDoneText}>Done</Text>
+                    </TouchableOpacity>
+                    <DateTimePicker
+                      value={data.nikahDate ? new Date(data.nikahDate) : new Date()}
+                      mode="date"
+                      display="spinner"
+                      minimumDate={new Date()}
+                      textColor="#1A1A1A"
+                      themeVariant="light"
+                      onChange={(_, date) => {
+                        if (date) update('nikahDate', date.toISOString());
+                      }}
+                    />
+                  </View>
+                </View>
+              </Modal>
             )}
             {data.dateOption === 'exact' && daysUntil && (
               <View style={styles.countdownPreview}>
-                <Text style={styles.countdownDays}>{daysUntil} days</Text>
-                <Text style={styles.countdownLabel}>until your Nikah</Text>
+                <Text style={styles.countdownDays}>{daysUntil}</Text>
+                <Text style={styles.countdownLabel}>days until your Nikah</Text>
               </View>
             )}
-            <Animated.View entering={FadeIn.delay(700).duration(350)}>
-              <PrimaryBtn
-                onPress={() => goTo(5)}
-                disabled={!data.dateOption || (data.dateOption === 'exact' && !data.nikahDate)}
-              >Continue →</PrimaryBtn>
-            </Animated.View>
-          </ScrollView>
+            <Animated.View entering={FadeIn.delay(700).duration(350)} />
+          </KeyboardAwareScrollView>
         );
 
       case 5:
         return (
-          <ScrollView contentContainerStyle={styles.screenContent}>
-            <BackButton />
+          <KeyboardAwareScrollView contentContainerStyle={styles.screenContent}>
+            <NavRow onContinue={() => goTo(6)} disabled={!data.ceremonyType} />
             <Logo />
             <Animated.View entering={FadeIn.delay(150).duration(350)}>
               <Text style={styles.screenTitle}>What are you planning?</Text>
@@ -302,16 +352,17 @@ export default function Onboarding() {
                 </OptionCard>
               </Animated.View>
             ))}
-            <Animated.View entering={FadeIn.delay(750).duration(350)}>
-              <PrimaryBtn onPress={() => goTo(6)} disabled={!data.ceremonyType}>Continue →</PrimaryBtn>
-            </Animated.View>
-          </ScrollView>
+            <Animated.View entering={FadeIn.delay(750).duration(350)} />
+          </KeyboardAwareScrollView>
         );
 
       case 6:
         return (
-          <ScrollView contentContainerStyle={styles.screenContent}>
-            <BackButton />
+          <KeyboardAwareScrollView contentContainerStyle={styles.screenContent}>
+            <NavRow
+              onContinue={() => goTo(7)}
+              disabled={!data.city || (data.city === 'Other' && !data.otherCity.trim())}
+            />
             <Logo />
             <Animated.View entering={FadeIn.delay(150).duration(350)}>
               <Text style={styles.screenTitle}>Where are you based?</Text>
@@ -348,12 +399,12 @@ export default function Onboarding() {
                 disabled={!data.city || (data.city === 'Other' && !data.otherCity.trim())}
               >Continue →</PrimaryBtn>
             </Animated.View>
-          </ScrollView>
+          </KeyboardAwareScrollView>
         );
 
       case 7:
         return (
-          <ScrollView contentContainerStyle={styles.screenContent}>
+          <KeyboardAwareScrollView contentContainerStyle={styles.screenContent}>
             <BackButton />
             <Logo />
             <Animated.View entering={FadeIn.delay(150).duration(350)}>
@@ -375,7 +426,7 @@ export default function Onboarding() {
             <Animated.View entering={FadeIn.delay(800).duration(350)}>
               <PrimaryBtn onPress={() => goTo(8)} disabled={!data.guestRange}>Continue →</PrimaryBtn>
             </Animated.View>
-          </ScrollView>
+          </KeyboardAwareScrollView>
         );
 
       case 8:
@@ -402,7 +453,7 @@ export default function Onboarding() {
 
       case 9:
         return (
-          <ScrollView contentContainerStyle={styles.screenContent}>
+          <KeyboardAwareScrollView contentContainerStyle={styles.screenContent}>
             <Logo />
             <Animated.View entering={FadeIn.delay(150).duration(350)}>
               <Text style={styles.screenTitle}>Save your Nikah plan.</Text>
@@ -436,7 +487,7 @@ export default function Onboarding() {
                 {accountEmail && accountPassword ? 'Create account' : 'Continue without an account'}
               </PrimaryBtn>
             </Animated.View>
-          </ScrollView>
+          </KeyboardAwareScrollView>
         );
 
       case 10:
@@ -519,6 +570,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: Spacing.sm,
+  },
+  navRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  continueBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    height: 40,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.6)',
+  },
+  continueBtnText: {
+    fontSize: FontSize.md,
+    fontFamily: FontFamily.sansSemiBold,
+    color: Colors.text,
   },
   logo: {
     fontSize: FontSize.lg,
@@ -653,14 +724,59 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
   },
   countdownDays: {
-    fontSize: FontSize.hero,
+    fontSize: 64,
     fontFamily: FontFamily.serifBold,
     color: Colors.gold,
+    lineHeight: 72,
   },
   countdownLabel: {
     fontSize: FontSize.md,
     fontFamily: FontFamily.sans,
     color: Colors.textSecondary,
+  },
+  datePickerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: BorderRadius.xl,
+    backgroundColor: Colors.surface,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderWidth: 1,
+    borderColor: Colors.gold,
+  },
+  datePickerText: {
+    fontSize: FontSize.base,
+    fontFamily: FontFamily.sansSemiBold,
+    color: Colors.text,
+  },
+  datePickerPlaceholder: {
+    fontSize: FontSize.base,
+    fontFamily: FontFamily.sans,
+    color: Colors.textSecondary,
+  },
+  dateModalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    // backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  dateModalSheet: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: BorderRadius.xl,
+    borderTopRightRadius: BorderRadius.xl,
+    paddingBottom: 32,
+  },
+  dateModalDone: {
+    alignItems: 'flex-end',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.08)',
+  },
+  dateModalDoneText: {
+    fontSize: FontSize.base,
+    fontFamily: FontFamily.sansSemiBold,
+    color: Colors.gold,
   },
   sparkleCircle: {
     width: 96,
