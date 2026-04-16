@@ -17,12 +17,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const QUICK_ACTIONS = [
-  { label: 'Venues', icon: 'business-outline' as const, tab: 'directory' },
-  { label: 'Catering', icon: 'restaurant-outline' as const, tab: 'directory' },
-  { label: 'Florists', icon: 'flower-outline' as const, tab: 'directory' },
-  { label: 'Invites', icon: 'mail-outline' as const, tab: 'hub' },
-  { label: 'Budget', icon: 'wallet-outline' as const, tab: 'hub' },
-  { label: 'Notes', icon: 'book-outline' as const, tab: 'hub' },
+  { label: 'Venues', icon: 'business-outline' as const, tab: 'directory', params: { section: 'venue' } },
+  { label: 'Catering', icon: 'restaurant-outline' as const, tab: 'directory', params: { section: 'vendor', sub: 'caterer' } },
+  { label: 'Florists', icon: 'flower-outline' as const, tab: 'directory', params: { section: 'vendor', sub: 'decorator' } },
+  { label: 'Invites', icon: 'mail-outline' as const, tab: 'hub', params: { tab: 'invites' } },
+  { label: 'Budget', icon: 'wallet-outline' as const, tab: 'hub', params: { tab: 'budget' } },
+  { label: 'Notes', icon: 'book-outline' as const, tab: 'hub', params: { tab: 'notes' } },
 ];
 
 function ThinkingDots() {
@@ -107,6 +107,7 @@ export default function HomeTab() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <ScrollView
           contentContainerStyle={styles.scroll}
+          showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.gold} />}
         >
         {/* Header */}
@@ -171,7 +172,7 @@ export default function HomeTab() {
             <TouchableOpacity
               key={action.label}
               style={styles.actionCard}
-              onPress={() => router.push(`/(tabs)/${action.tab}` as any)}
+              onPress={() => router.push({ pathname: `/(tabs)/${action.tab}` as any, params: action.params })}
               activeOpacity={0.7}
             >
               <Ionicons name={action.icon} size={24} color={Colors.text} />
@@ -189,7 +190,7 @@ export default function HomeTab() {
               <Text style={styles.aiBadgeText}>MyNikkah AI</Text>
             </View>
           </View>
-          <View style={{ marginTop: 24 }}>
+          <View style={{ marginTop: 12 }}>
             <Text style={styles.aiTitle}>
               <Text style={{ fontFamily: FontFamily.sansLight }}>Help Me{'\n'}</Text>
               <Text style={{ fontFamily: FontFamily.serifBold, color: Colors.gold }}>Plan My Nikah</Text>
@@ -252,7 +253,7 @@ const styles = StyleSheet.create({
   },
   actionLabel: { fontSize: FontSize.xs, fontFamily: FontFamily.sansMedium, color: Colors.text },
   aiCard: {
-    borderRadius: BorderRadius.xl, backgroundColor: Colors.surface, padding: Spacing.lg,
+    borderRadius: BorderRadius.xl, backgroundColor: Colors.surface, padding: Spacing.md,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, overflow: 'hidden',
   },
   aiHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

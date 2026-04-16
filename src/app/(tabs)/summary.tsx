@@ -1,24 +1,28 @@
 import { BorderRadius, Colors, FontFamily, FontSize, GradientConfig, Spacing } from '@/constants/theme';
+import type { VendorItem } from '@/lib/types';
 import { useWorkspace } from '@/lib/useWorkspace';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useCallback, useEffect, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
 import {
-    ActivityIndicator, RefreshControl,
+    ActivityIndicator, Modal, RefreshControl,
     ScrollView,
     StyleSheet,
-    Text,
+    Text, TouchableOpacity,
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SummaryTab() {
+  const router = useRouter();
   const { workspace, workspaceId, summary, fetchWorkspace, fetchSummary } = useWorkspace();
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedVendor, setSelectedVendor] = useState<VendorItem | null>(null);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     if (workspaceId) { fetchWorkspace(); fetchSummary(); }
-  }, [workspaceId]);
+  }, [workspaceId]));
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -73,7 +77,7 @@ export default function SummaryTab() {
           <Text style={styles.subSectionLabel}>Venue</Text>
           {summary?.finalizedVenues && summary.finalizedVenues.length > 0 ? (
             summary.finalizedVenues.map(v => (
-              <View key={v.id} style={styles.finalizedCard}>
+              <TouchableOpacity key={v.id} style={styles.finalizedCard} onPress={() => setSelectedVendor(v)} activeOpacity={0.8}>
                 <View style={styles.finalizedImagePlaceholder}>
                   <Ionicons name="business" size={32} color={Colors.gold} />
                 </View>
@@ -89,7 +93,7 @@ export default function SummaryTab() {
                     <View style={styles.pricePill}><Text style={styles.pricePillText}>{v.priceRange}</Text></View>
                   )}
                 </View>
-              </View>
+              </TouchableOpacity>
             ))
           ) : (
             <View style={styles.emptyCard}>
@@ -101,7 +105,7 @@ export default function SummaryTab() {
           {summary?.finalizedVendors && summary.finalizedVendors.length > 0 ? (
             <View style={styles.vendorListCard}>
               {summary.finalizedVendors.map((v, i) => (
-                <View key={v.id}>
+                <TouchableOpacity key={v.id} onPress={() => setSelectedVendor(v)} activeOpacity={0.8}>
                   <View style={styles.vendorRow}>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.vendorTitle}>{v.title}</Text>
@@ -114,7 +118,7 @@ export default function SummaryTab() {
                     )}
                   </View>
                   {i < (summary.finalizedVendors?.length || 0) - 1 && <View style={styles.divider} />}
-                </View>
+                </TouchableOpacity>
               ))}
             </View>
           ) : (
@@ -126,7 +130,7 @@ export default function SummaryTab() {
 
         {/* Stats Grid */}
         <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
+          <TouchableOpacity style={styles.statCard} onPress={() => router.push({ pathname: '/(tabs)/hub', params: { tab: 'invites' } })} activeOpacity={0.8}>
             <Text style={styles.sectionLabel}>GUESTS</Text>
             <View style={styles.statCardInner}>
               <Text style={styles.statBig}>{summary?.guestCount || '—'}</Text>
@@ -143,9 +147,9 @@ export default function SummaryTab() {
                 </View>
               </View>
             </View>
-          </View>
+          </TouchableOpacity>
 
-          <View style={styles.statCard}>
+          <TouchableOpacity style={styles.statCard} onPress={() => router.push({ pathname: '/(tabs)/hub', params: { tab: 'budget' } })} activeOpacity={0.8}>
             <Text style={styles.sectionLabel}>BUDGET</Text>
             <View style={styles.statCardInner}>
               <Text style={styles.statBig}>{totalBudget > 0 ? `£${(totalBudget / 1000).toFixed(0)}k` : '—'}</Text>
@@ -162,9 +166,86 @@ export default function SummaryTab() {
                 </>
               )}
             </View>
-          </View>
+          </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Vendor/Venue Detail Modal */}
+      <Modal visible={!!selectedVendor} animationType="slide" presentationStyle="pageSheet">
+        {selectedVendor && (
+          <SafeAreaView style={styles.modalContainer}>
+            <ScrollView contentContainerStyle={styles.modalScroll} showsVerticalScrollIndicator={false}>
+              <TouchableOpacity style={styles.modalBackBtn} onPress={() => setSelectedVendor(null)}>
+                <Ionicons name="chevron-back" size={24} color={Colors.text} />
+              </TouchableOpacity>
+
+              {selectedVendor.section === 'venue' ? (
+                <View style={styles.modalImagePlaceholder}>
+                  <Ionicons name="business" size={48} color={Colors.gold} />
+                </View>
+              ) : (
+                <View style={styles.modalAvatarWrap}>
+                  <View style={styles.modalAvatar}>
+                    <Text style={styles.modalAvatarText}>{selectedVendor.title.charAt(0)}</Text>
+                  </View>
+                </View>
+              )}
+
+              <View style={styles.modalBody}>
+                <Text style={styles.modalTitle}>{selectedVendor.title}</Text>
+                <View style={styles.modalMetaRow}>
+                  {selectedVendor.vendorCategory && (
+                    <View style={styles.catBadge}>
+                      <Text style={styles.catBadgeText}>
+                        {selectedVendor.vendorCategory === 'mua' ? 'MUA' : selectedVendor.vendorCategory.charAt(0).toUpperCase() + selectedVendor.vendorCategory.slice(1)}
+                      </Text>
+                    </View>
+                  )}
+                  {selectedVendor.priceRange && (
+                    <View style={styles.pricePill}><Text style={styles.pricePillText}>{selectedVendor.priceRange}</Text></View>
+                  )}
+                  {selectedVendor.location && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Ionicons name="location-outline" size={14} color={Colors.textSecondary} />
+                      <Text style={styles.locText}>{selectedVendor.location}</Text>
+                    </View>
+                  )}
+                </View>
+
+                {selectedVendor.bio && (
+                  <View style={styles.modalSection}>
+                    <Text style={styles.modalSectionLabel}>ABOUT</Text>
+                    <Text style={styles.modalSectionText}>{selectedVendor.bio}</Text>
+                  </View>
+                )}
+
+                {selectedVendor.capacity && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 16 }}>
+                    <Ionicons name="people" size={16} color={Colors.gold} />
+                    <Text style={styles.modalSectionText}>Capacity: {selectedVendor.capacity}</Text>
+                  </View>
+                )}
+
+                {selectedVendor.contactEmail && (
+                  <View style={styles.modalSection}>
+                    <Text style={styles.modalSectionLabel}>CONTACT</Text>
+                    <View style={styles.modalContactRow}>
+                      <Ionicons name="mail" size={16} color={Colors.gold} />
+                      <Text style={styles.modalContactText}>{selectedVendor.contactEmail}</Text>
+                    </View>
+                    {selectedVendor.contactPhone && (
+                      <View style={styles.modalContactRow}>
+                        <Ionicons name="call" size={16} color={Colors.gold} />
+                        <Text style={styles.modalContactText}>{selectedVendor.contactPhone}</Text>
+                      </View>
+                    )}
+                  </View>
+                )}
+              </View>
+            </ScrollView>
+          </SafeAreaView>
+        )}
+      </Modal>
       </SafeAreaView>
     </LinearGradient>
   );
@@ -218,4 +299,20 @@ const styles = StyleSheet.create({
   progressBar: { height: 6, backgroundColor: Colors.background, borderRadius: 3, overflow: 'hidden' },
   progressFill: { height: 6, backgroundColor: Colors.gold, borderRadius: 3 },
   budgetLabels: { flexDirection: 'row', justifyContent: 'space-between' },
+  // Detail Modal
+  modalContainer: { flex: 1, backgroundColor: Colors.surface },
+  modalScroll: { paddingBottom: 40 },
+  modalBackBtn: { padding: 16 },
+  modalImagePlaceholder: { height: 220, backgroundColor: Colors.goldLight, justifyContent: 'center', alignItems: 'center' },
+  modalAvatarWrap: { alignItems: 'center', paddingTop: 24 },
+  modalAvatar: { width: 112, height: 112, borderRadius: 56, backgroundColor: Colors.gold, justifyContent: 'center', alignItems: 'center' },
+  modalAvatarText: { color: '#fff', fontSize: 40, fontFamily: FontFamily.serifBold },
+  modalBody: { padding: Spacing.lg },
+  modalTitle: { fontSize: FontSize.xxxl, fontFamily: FontFamily.serifBold, color: Colors.text },
+  modalMetaRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 8 },
+  modalSection: { marginTop: 24 },
+  modalSectionLabel: { fontSize: FontSize.xs, fontFamily: FontFamily.sansSemiBold, color: Colors.gold, letterSpacing: 1, marginBottom: 8 },
+  modalSectionText: { fontSize: FontSize.md, fontFamily: FontFamily.sans, color: Colors.textSecondary, lineHeight: 22 },
+  modalContactRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: Colors.background, borderRadius: 12, padding: 12, marginTop: 8 },
+  modalContactText: { fontSize: FontSize.md, fontFamily: FontFamily.sans, color: Colors.text },
 });

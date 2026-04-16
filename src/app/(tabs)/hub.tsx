@@ -5,7 +5,7 @@ import type { BudgetItem, GuestInvite, SavedVendor } from '@/lib/types';
 import { useWorkspace } from '@/lib/useWorkspace';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator, Alert,
@@ -146,6 +146,34 @@ function SavedTab({ workspaceId, refreshKey }: { workspaceId: number; refreshKey
     setStatusModal(null);
   };
 
+  const handleRemove = (sv: SavedVendorWithItem) => {
+    Alert.alert(
+      'Remove Vendor',
+      `Remove ${sv.vendorItem?.title || 'this vendor'} from your hub?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const url = toAbsoluteUrl(buildUrl(api.savedVendors.remove.path, { id: workspaceId, vendorId: sv.id }));
+              const res = await fetchWithAuth(url, { method: 'DELETE' });
+              if (res.ok) {
+                setDetailItem(null);
+                fetch_();
+              } else {
+                Alert.alert('Error', 'Could not remove vendor.');
+              }
+            } catch {
+              Alert.alert('Error', 'Could not remove vendor.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (loading) return <ActivityIndicator style={{ marginTop: 40 }} color={Colors.gold} />;
   if (vendors.length === 0) return (
     <View style={styles.emptyState}>
@@ -269,18 +297,26 @@ function SavedTab({ workspaceId, refreshKey }: { workspaceId: number; refreshKey
             </ScrollView>
 
             <View style={styles.detailModalFooter}>
-              {(() => {
-                const current = STATUS_OPTIONS.find(s => s.value === (detailItem.contactStatus || 'saved')) || STATUS_OPTIONS[0];
-                return (
-                  <TouchableOpacity
-                    style={[styles.detailStatusBtn, { backgroundColor: current.bg }]}
-                    onPress={() => { setDetailItem(null); setStatusModal(detailItem); }}
-                  >
-                    <Ionicons name="flag-outline" size={18} color={current.fg} />
-                    <Text style={[styles.detailStatusBtnText, { color: current.fg }]}>{current.label} — Tap to update</Text>
-                  </TouchableOpacity>
-                );
-              })()}
+              <View style={styles.detailFooterRow}>
+                {(() => {
+                  const current = STATUS_OPTIONS.find(s => s.value === (detailItem.contactStatus || 'saved')) || STATUS_OPTIONS[0];
+                  return (
+                    <TouchableOpacity
+                      style={[styles.detailStatusBtn, { backgroundColor: current.bg, flex: 1 }]}
+                      onPress={() => { setDetailItem(null); setStatusModal(detailItem); }}
+                    >
+                      <Ionicons name="flag-outline" size={18} color={current.fg} />
+                      <Text style={[styles.detailStatusBtnText, { color: current.fg }]}>{current.label} — Tap to update</Text>
+                    </TouchableOpacity>
+                  );
+                })()}
+                <TouchableOpacity
+                  style={styles.detailRemoveBtn}
+                  onPress={() => handleRemove(detailItem)}
+                >
+                  <Ionicons name="trash-outline" size={20} color={Colors.error || '#E53935'} />
+                </TouchableOpacity>
+              </View>
             </View>
           </SafeAreaView>
         )}
@@ -776,8 +812,18 @@ function InvitesTab({ workspaceId }: { workspaceId: number }) {
 // --- Main Hub Screen ---
 export default function HubTab() {
   const { workspaceId } = useWorkspace();
-  const [activeTab, setActiveTab] = useState('saved');
+  const params = useLocalSearchParams<{ tab?: string }>();
+  const validTabs = ['saved', 'budget', 'notes', 'invites'];
+  const initialTab = params.tab && validTabs.includes(params.tab) ? params.tab : 'saved';
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // React to route param changes from home quick actions
+  useEffect(() => {
+    if (params.tab && validTabs.includes(params.tab)) {
+      setActiveTab(params.tab);
+    }
+  }, [params.tab]);
 
   useFocusEffect(useCallback(() => {
     setRefreshKey(k => k + 1);
@@ -942,4 +988,6 @@ const styles = StyleSheet.create({
   detailModalFooter: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: Spacing.lg, backgroundColor: Colors.surface },
   detailStatusBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 56, borderRadius: BorderRadius.full },
   detailStatusBtnText: { fontSize: FontSize.base, fontFamily: FontFamily.sansSemiBold },
+  detailFooterRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  detailRemoveBtn: { width: 56, height: 56, borderRadius: BorderRadius.full, borderWidth: 1, borderColor: 'rgba(229,57,53,0.3)', alignItems: 'center', justifyContent: 'center' },
 });

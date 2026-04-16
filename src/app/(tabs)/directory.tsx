@@ -5,11 +5,16 @@ import type { SavedVendor, VendorItem } from '@/lib/types';
 import { useWorkspace } from '@/lib/useWorkspace';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert, FlatList,
+  Alert,
+  Animated,
+  Dimensions,
+  FlatList,
   Modal,
+  PanResponder,
   ScrollView,
   StyleSheet,
   Text, TextInput, TouchableOpacity,
@@ -33,14 +38,21 @@ const VENDOR_SUBS = [
 
 export default function DirectoryTab() {
   const { workspaceId } = useWorkspace();
-  const [activeTab, setActiveTab] = useState<'venue' | 'vendor'>('venue');
-  const [subCategory, setSubCategory] = useState('all');
+  const params = useLocalSearchParams<{ section?: string; sub?: string }>();
+  const [activeTab, setActiveTab] = useState<'venue' | 'vendor'>(
+    params.section === 'vendor' ? 'vendor' : 'venue'
+  );
+  const [subCategory, setSubCategory] = useState(params.sub || 'all');
   const [searchQuery, setSearchQuery] = useState('');
   const [items, setItems] = useState<VendorItem[]>([]);
-  const [savedIds, setSavedIds] = useState<Set<number>>(new Set());
+  const [savedIds, setSavedIds] = useState<Map<number, number>>(new Map());
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState<VendorItem | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Modal gesture handling
+  const screenHeight = Dimensions.get('window').height;
+  const modalY = useRef(new Animated.Value(screenHeight)).current;
 
   const fetchDirectory = useCallback(async () => {
     try {
@@ -59,12 +71,20 @@ export default function DirectoryTab() {
       const res = await fetchWithAuth(url);
       if (res.ok) {
         const data: SavedVendor[] = await res.json();
-        setSavedIds(new Set(data.map(sv => sv.vendorItemId)));
+        setSavedIds(new Map(data.map(sv => [sv.vendorItemId, sv.id])));
       }
     } catch (e) { console.error(e); }
   }, [workspaceId]);
 
   useEffect(() => { fetchDirectory(); fetchSaved(); }, []); // react-hooks/exhaustive-deps
+
+  // React to route param changes from home quick actions
+  useEffect(() => {
+    if (params.section === 'venue' || params.section === 'vendor') {
+      setActiveTab(params.section);
+      setSubCategory(params.sub || 'all');
+    }
+  }, [params.section, params.sub]);
 
   const handleSave = async (vendorItemId: number) => {
     if (!workspaceId) return;
@@ -77,11 +97,90 @@ export default function DirectoryTab() {
         body: JSON.stringify({ vendorItemId }),
       });
       if (res.ok) {
-        setSavedIds(prev => new Set([...prev, vendorItemId]));
+        const saved = await res.json();
+        setSavedIds(prev => new Map([...prev, [vendorItemId, saved.id]]));
         Alert.alert('Added to Hub', 'Vendor saved to your hub.');
       }
     } catch { Alert.alert('Error', 'Could not save. Try again.'); }
     setSaving(false);
+  };
+
+  const handleUnsave = async (vendorItemId: number) => {
+    if (!workspaceId) return;
+    const savedRecordId = savedIds.get(vendorItemId);
+    if (!savedRecordId) return;
+    setSaving(true);
+    try {
+      const url = toAbsoluteUrl(buildUrl(api.savedVendors.remove.path, { id: workspaceId, vendorId: savedRecordId }));
+      const res = await fetchWithAuth(url, { method: 'DELETE' });
+      if (res.ok) {
+        setSavedIds(prev => {
+          const next = new Map(prev);
+          next.delete(vendorItemId);
+          return next;
+        });
+        Alert.alert('Removed from Hub', 'Vendor removed from your hub.');
+      } else {
+        Alert.alert('Error', 'Could not remove vendor. Try again.');
+      }
+    } catch (error) {
+      console.error('Unsave error:', error);
+      Alert.alert('Error', 'Could not remove vendor. Try again.');
+    }
+    setSaving(false);
+  };
+
+  const handleToggleSave = (vendorItemId: number) => {
+    if (savedIds.has(vendorItemId)) {
+      handleUnsave(vendorItemId);
+    } else {
+      handleSave(vendorItemId);
+    }
+  };
+
+  // Pan responder for modal drag handle
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderMove: (evt, gestureState) => {
+        if (gestureState.dy > 0) {
+          modalY.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        if (gestureState.dy > screenHeight * 0.1) {
+          closeModal();
+        } else {
+          Animated.spring(modalY, {
+            toValue: 0,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+    })
+  ).current;
+
+  const closeModal = () => {
+    Animated.timing(modalY, {
+      toValue: screenHeight,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => {
+      setSelectedItem(null);
+    });
+  };
+
+  const openModal = (item: VendorItem) => {
+    modalY.setValue(screenHeight);
+    setSelectedItem(item);
+    requestAnimationFrame(() => {
+      Animated.timing(modalY, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    });
   };
 
   const subcats = activeTab === 'venue' ? VENUE_SUBS : VENDOR_SUBS;
@@ -105,7 +204,7 @@ export default function DirectoryTab() {
   };
 
   const renderItem = ({ item }: { item: VendorItem }) => (
-    <TouchableOpacity style={styles.itemCard} onPress={() => setSelectedItem(item)} activeOpacity={0.8}>
+    <TouchableOpacity style={styles.itemCard} onPress={() => openModal(item)} activeOpacity={0.8}>
       {item.section === 'venue' && (
         <View style={styles.venueImagePlaceholder}>
           <Ionicons name="business" size={32} color={Colors.gold} />
@@ -115,7 +214,7 @@ export default function DirectoryTab() {
           </View>
           <TouchableOpacity
             style={styles.saveIconBtn}
-            onPress={() => handleSave(item.id)}
+            onPress={() => handleToggleSave(item.id)}
           >
             <Ionicons
               name={savedIds.has(item.id) ? 'star' : 'star-outline'}
@@ -132,7 +231,7 @@ export default function DirectoryTab() {
               <Ionicons name="checkmark-circle" size={12} color={Colors.gold} />
               <Text style={styles.verifiedText}>Verified</Text>
             </View>
-            <TouchableOpacity onPress={() => handleSave(item.id)}>
+            <TouchableOpacity onPress={() => handleToggleSave(item.id)}>
               <Ionicons
                 name={savedIds.has(item.id) ? 'star' : 'star-outline'}
                 size={14}
@@ -185,7 +284,7 @@ export default function DirectoryTab() {
         </View>
 
         {/* Subcategory tabs */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.subTabScroll}>
+        <View style={styles.subTabWrap}>
           {subcats.map(cat => (
             <TouchableOpacity
               key={cat.value}
@@ -195,7 +294,7 @@ export default function DirectoryTab() {
               <Text style={[styles.subTabText, subCategory === cat.value && styles.subTabTextActive]}>{cat.label}</Text>
             </TouchableOpacity>
           ))}
-        </ScrollView>
+        </View>
 
         {/* Search */}
         <View style={styles.searchRow}>
@@ -230,11 +329,20 @@ export default function DirectoryTab() {
       )}
 
       {/* Detail Modal */}
-      <Modal visible={!!selectedItem} animationType="slide" presentationStyle="pageSheet">
+      <Modal visible={!!selectedItem} animationType="none" transparent>
         {selectedItem && (
-          <SafeAreaView style={styles.modalContainer}>
-            <ScrollView contentContainerStyle={styles.modalScroll}>
-              <TouchableOpacity style={styles.modalBackBtn} onPress={() => setSelectedItem(null)}>
+          <Animated.View
+            style={[
+              styles.modalContainer,
+              { transform: [{ translateY: modalY }] }
+            ]}
+          >
+            <SafeAreaView style={{ flex: 1 }}>
+              <View style={styles.dragHandleArea} {...panResponder.panHandlers}>
+                <View style={styles.modalHandle} />
+              </View>
+              <ScrollView contentContainerStyle={styles.modalScroll}>
+              <TouchableOpacity style={styles.modalBackBtn} onPress={closeModal}>
                 <Ionicons name="chevron-back" size={24} color={Colors.text} />
               </TouchableOpacity>
 
@@ -305,21 +413,28 @@ export default function DirectoryTab() {
 
             <View style={styles.modalFooter}>
               <TouchableOpacity
-                style={[styles.saveToHubBtn, savedIds.has(selectedItem.id) && styles.saveToHubBtnDisabled]}
-                onPress={() => handleSave(selectedItem.id)}
-                disabled={savedIds.has(selectedItem.id) || saving}
+                style={[styles.saveToHubBtn, saving && styles.saveToHubBtnDisabled]}
+                onPress={() => handleToggleSave(selectedItem.id)}
+                disabled={saving}
               >
                 {saving ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
                   <>
-                    <Ionicons name={savedIds.has(selectedItem.id) ? 'checkmark' : 'add'} size={18} color="#fff" />
-                    <Text style={styles.saveToHubText}>{savedIds.has(selectedItem.id) ? 'Already in Hub' : 'Save to Hub'}</Text>
+                    <Ionicons
+                      name={savedIds.has(selectedItem.id) ? 'remove' : 'add'}
+                      size={18}
+                      color="#fff"
+                    />
+                    <Text style={styles.saveToHubText}>
+                      {savedIds.has(selectedItem.id) ? 'Remove from Hub' : 'Save to Hub'}
+                    </Text>
                   </>
                 )}
               </TouchableOpacity>
             </View>
-          </SafeAreaView>
+            </SafeAreaView>
+          </Animated.View>
         )}
       </Modal>
     </SafeAreaView>
@@ -329,7 +444,7 @@ export default function DirectoryTab() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent', borderTopWidth: 1, borderColor: 'green' },
-  headerSection: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, gap: Spacing.sm },
+  headerSection: { paddingHorizontal: Spacing.lg, padding: Spacing.md, gap: Spacing.sm },
   pageTitle: { fontSize: FontSize.xxxl, fontFamily: FontFamily.serifBold, color: Colors.text, letterSpacing: -0.5 },
   pageSubtitle: { fontSize: FontSize.md, fontFamily: FontFamily.sans, color: Colors.textSecondary },
   tabRow: { flexDirection: 'row', gap: Spacing.sm, paddingTop: Spacing.sm },
@@ -337,8 +452,8 @@ const styles = StyleSheet.create({
   tabBtnActive: { backgroundColor: Colors.primary },
   tabBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.sansMedium, color: Colors.textSecondary },
   tabBtnTextActive: { color: '#fff' },
-  subTabScroll: { marginTop: 4 },
-  subTab: { borderRadius: BorderRadius.full, paddingHorizontal: 16, paddingVertical: 6, backgroundColor: Colors.surface, marginRight: 8 },
+  subTabWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+  subTab: { borderRadius: BorderRadius.full, paddingHorizontal: 16, paddingVertical: 6, backgroundColor: Colors.surface },
   subTabActive: { backgroundColor: Colors.primary },
   subTabText: { fontSize: FontSize.xs, fontWeight: '500', color: Colors.textSecondary },
   subTabTextActive: { color: '#fff' },
@@ -367,6 +482,8 @@ const styles = StyleSheet.create({
   emptyDesc: { fontSize: FontSize.md, fontFamily: FontFamily.sans, color: Colors.textSecondary, marginTop: 4 },
   // Modal
   modalContainer: { flex: 1, backgroundColor: Colors.surface },
+  dragHandleArea: { alignItems: 'center', paddingVertical: 12 },
+  modalHandle: { width: 36, height: 4, backgroundColor: Colors.textSecondary, borderRadius: 2 },
   modalScroll: { paddingBottom: 100 },
   modalBackBtn: { padding: 16 },
   modalImagePlaceholder: { height: 220, backgroundColor: Colors.goldLight, justifyContent: 'center', alignItems: 'center' },

@@ -62,8 +62,8 @@ const styles = StyleSheet.create({
   tabBar: {
     position: 'absolute',
     bottom: 24,
-    left: 24,
-    right: 24,
+    left: 34,
+    right: 34,
     height: 60,
     borderRadius: 40,
     backgroundColor: '#FFFFFF',
@@ -72,7 +72,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.08,
     shadowRadius: 30,
-    elevation: 10,
-    paddingBottom: 0,
+    elevation: 20,
+    width: '95%',
+    marginLeft: '2.5%',
+    paddingTop: 10,
   },
 });

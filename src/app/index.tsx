@@ -1,6 +1,7 @@
 import { BorderRadius, Colors, FontFamily, FontSize, Spacing } from '@/constants/theme';
 import { getGuestToken } from '@/lib/fetchWithAuth';
 import { getSavedWorkspaceId, useWorkspace } from '@/lib/useWorkspace';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -15,6 +16,9 @@ export default function Welcome() {
 
   useEffect(() => {
     (async () => {
+      if (__DEV__) {
+        await AsyncStorage.clear();
+      }
       const token = await getGuestToken();
       const wsId = await getSavedWorkspaceId();
       if (token && wsId) {
