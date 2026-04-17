@@ -68,7 +68,6 @@ export default function Welcome() {
           <Text style={styles.heartIcon}>♥</Text>
         </View>
 
-        <Text style={styles.title}>MyNikkah</Text>
         <Text style={styles.title}>OurNikkah</Text>
         <Text style={styles.subtitle}>Plan your perfect wedding journey together</Text>
 
