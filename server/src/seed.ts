@@ -1,17 +1,8 @@
-import { sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { db } from './db';
 import { vendorItems } from './db/schema';
 
 export async function seedDirectory() {
-  // Idempotent: skip if already seeded
-  const existing = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(vendorItems);
-
-  if ((existing[0]?.count ?? 0) > 0) {
-    return;
-  }
-
   const venues = [
     {
       section: 'venue' as const,
@@ -425,6 +416,22 @@ export async function seedDirectory() {
     source: 'seed',
     status: 'active',
   }));
+
+  // Idempotent: skip insert if already seeded, but backfill vendorCategory if null
+  const existing = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(vendorItems);
+
+  if ((existing[0]?.count ?? 0) > 0) {
+    // Always ensure vendorCategory is set correctly for every seed item
+    for (const item of allItems) {
+      await db
+        .update(vendorItems)
+        .set({ vendorCategory: item.vendorCategory })
+        .where(eq(vendorItems.title, item.title));
+    }
+    return;
+  }
 
   await db.insert(vendorItems).values(allItems);
 }

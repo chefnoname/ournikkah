@@ -1,4 +1,5 @@
 import FadeScreen from '@/components/FadeScreen';
+import NotesScreen from '@/components/NotesScreen';
 import { BorderRadius, Colors, FontFamily, FontSize, GradientConfig, Spacing } from '@/constants/theme';
 import { api, buildUrl, toAbsoluteUrl } from '@/lib/api';
 import { fetchWithAuth } from '@/lib/fetchWithAuth';
@@ -7,7 +8,7 @@ import { useWorkspace } from '@/lib/useWorkspace';
 import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator, Alert,
@@ -41,7 +42,9 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const CARD_WIDTH = SCREEN_WIDTH - 48; // Full width minus hub padding
+const GRID_GAP = 10;
+const GRID_PADDING = 24; // hub horizontal padding
+const CARD_WIDTH = (SCREEN_WIDTH - GRID_PADDING * 2 - GRID_GAP) / 2;
 
 const STATUS_OPTIONS = [
   { value: 'saved', label: 'Saved', bg: '#F3F4F6', fg: '#6B6B6B' },
@@ -196,7 +199,7 @@ function StatusPill({
   );
 }
 
-// --- SavedCard Component ---
+// --- SavedCard Component (compact grid tile) ---
 function SavedCard({
   sv,
   isExpanded,
@@ -234,7 +237,7 @@ function SavedCard({
   return (
     <View style={[styles.savedCard, { width: CARD_WIDTH }]}>
       <TouchableOpacity onPress={onToggle} activeOpacity={0.9}>
-        {/* Hero Image Area */}
+        {/* Compact Hero */}
         <View style={styles.cardHero}>
           <LinearGradient
             colors={['#E8C4B8', '#FDF3E3']}
@@ -244,14 +247,12 @@ function SavedCard({
           />
           <Text style={styles.cardMonogram}>{monogram}</Text>
 
-          {/* Price badge top-right */}
           {item?.priceRange && (
             <View style={styles.cardPriceBadge}>
               <Text style={styles.cardPriceBadgeText}>{item.priceRange}</Text>
             </View>
           )}
 
-          {/* Bottom gradient overlay with title */}
           <LinearGradient
             colors={['transparent', 'rgba(0,0,0,0.55)']}
             style={styles.cardHeroOverlay}
@@ -259,7 +260,7 @@ function SavedCard({
             <Text style={styles.cardTitle} numberOfLines={1}>{item?.title}</Text>
             {item?.location && (
               <View style={styles.cardLocationRow}>
-                <Ionicons name="location" size={12} color="rgba(255,255,255,0.8)" />
+                <Ionicons name="location" size={10} color="rgba(255,255,255,0.8)" />
                 <Text style={styles.cardLocationText} numberOfLines={1}>{item.location}</Text>
               </View>
             )}
@@ -273,7 +274,7 @@ function SavedCard({
             onStatusChange={(status) => onStatusChange(sv.vendorItemId, status)}
           />
           <Animated.View style={chevronStyle}>
-            <Ionicons name="chevron-down" size={18} color={Colors.textSecondary} />
+            <Ionicons name="chevron-down" size={14} color={Colors.textSecondary} />
           </Animated.View>
         </View>
       </TouchableOpacity>
@@ -281,32 +282,29 @@ function SavedCard({
       {/* Expanded Content */}
       <Animated.View style={expandStyle}>
         <View style={styles.cardExpandedContent}>
-          {/* Bio */}
           {item?.bio && (
-            <Text style={styles.cardBio}>{item.bio}</Text>
+            <Text style={styles.cardBio} numberOfLines={3}>{item.bio}</Text>
           )}
 
-          {/* Capacity & Specialty badges */}
           <View style={styles.cardBadgeRow}>
             {item?.capacity && (
               <View style={styles.cardGoldBadge}>
-                <Ionicons name="people" size={12} color={Colors.gold} />
+                <Ionicons name="people" size={10} color={Colors.gold} />
                 <Text style={styles.cardGoldBadgeText}>{item.capacity}</Text>
               </View>
             )}
             {item?.specialty && (
               <View style={styles.cardGreyBadge}>
-                <Text style={styles.cardGreyBadgeText}>{item.specialty}</Text>
+                <Text style={styles.cardGreyBadgeText} numberOfLines={1}>{item.specialty}</Text>
               </View>
             )}
           </View>
 
-          {/* Feature tags */}
           {item?.features && item.features.length > 0 && (
             <View style={styles.cardFeatureRow}>
-              {item.features.map((f, i) => (
+              {item.features.slice(0, 3).map((f, i) => (
                 <View key={i} style={styles.cardFeatureTag}>
-                  <Ionicons name="checkmark" size={10} color="#4A9B7F" />
+                  <Ionicons name="checkmark" size={8} color="#4A9B7F" />
                   <Text style={styles.cardFeatureTagText}>{f}</Text>
                 </View>
               ))}
@@ -320,7 +318,7 @@ function SavedCard({
                 style={styles.cardCallBtn}
                 onPress={() => Linking.openURL(`tel:${item.contactPhone}`)}
               >
-                <Ionicons name="call" size={14} color="#fff" />
+                <Ionicons name="call" size={12} color="#fff" />
                 <Text style={styles.cardCallBtnText}>Call</Text>
               </TouchableOpacity>
             )}
@@ -329,19 +327,18 @@ function SavedCard({
                 style={styles.cardEmailBtn}
                 onPress={() => Linking.openURL(`mailto:${item.contactEmail}`)}
               >
-                <Ionicons name="mail" size={14} color={Colors.text} />
+                <Ionicons name="mail" size={12} color={Colors.text} />
                 <Text style={styles.cardEmailBtnText}>Email</Text>
               </TouchableOpacity>
             )}
           </View>
 
-          {/* View Details button */}
           <TouchableOpacity
             style={styles.cardViewDetailsBtn}
             onPress={() => onViewDetails(sv)}
           >
             <Text style={styles.cardViewDetailsBtnText}>View Details</Text>
-            <Ionicons name="chevron-forward" size={14} color={Colors.gold} />
+            <Ionicons name="chevron-forward" size={12} color={Colors.gold} />
           </TouchableOpacity>
         </View>
       </Animated.View>
@@ -350,15 +347,23 @@ function SavedCard({
 }
 
 // --- Saved Tab ---
-function SavedTab({ workspaceId, refreshKey }: { workspaceId: number; refreshKey: number }) {
+function SavedTab({
+  workspaceId,
+  refreshKey,
+  targetVendorItemId,
+  onTargetHandled,
+}: {
+  workspaceId: number;
+  refreshKey: number;
+  targetVendorItemId?: number | null;
+  onTargetHandled?: () => void;
+}) {
   const [vendors, setVendors] = useState<SavedVendorWithItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [cardIndex, setCardIndex] = useState(0);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<SavedVendorWithItem | null>(null);
-  const scrollRef = useRef<ScrollView>(null);
 
   const fetch_ = useCallback(async () => {
     try {
@@ -434,41 +439,22 @@ function SavedTab({ workspaceId, refreshKey }: { workspaceId: number; refreshKey
 
   const currentItems = activeCategory ? (grouped[activeCategory] || []) : [];
 
-  // Reset carousel when category changes
+  // Reset expanded card when category changes
   useEffect(() => {
-    setCardIndex(0);
     setExpandedId(null);
-    scrollRef.current?.scrollTo({ x: 0, animated: false });
   }, [activeCategory]);
 
-  // Clamp cardIndex when items change
+  // Navigate to a specific vendor card when arriving from a note mention
   useEffect(() => {
-    if (currentItems.length > 0 && cardIndex >= currentItems.length) {
-      setCardIndex(currentItems.length - 1);
+    if (!targetVendorItemId || loading) return;
+    const match = vendors.find(sv => sv.vendorItemId === targetVendorItemId);
+    if (match) {
+      const cat = match.vendorItem?.vendorCategory || 'other';
+      setActiveCategory(cat);
+      setExpandedId(match.id);
     }
-  }, [currentItems.length]);
-
-  // Snap to nearest card — forces focus if 30%+ of the next card is visible
-  const handleScrollEnd = useCallback((e: { nativeEvent: { contentOffset: { x: number } } }) => {
-    const offsetX = e.nativeEvent.contentOffset.x;
-    const rawIndex = offsetX / CARD_WIDTH;
-    // If 30% or more of the next card is showing, snap forward; otherwise snap back
-    const newIndex = Math.max(0, Math.min(
-      currentItems.length - 1,
-      rawIndex % 1 >= 0.3 ? Math.ceil(rawIndex) : Math.floor(rawIndex)
-    ));
-    if (newIndex !== cardIndex) {
-      setExpandedId(null);
-    }
-    setCardIndex(newIndex);
-    scrollRef.current?.scrollTo({ x: newIndex * CARD_WIDTH, animated: true });
-  }, [cardIndex, currentItems.length]);
-
-  const scrollToIndex = (index: number) => {
-    setCardIndex(index);
-    setExpandedId(null);
-    scrollRef.current?.scrollTo({ x: index * CARD_WIDTH, animated: true });
-  };
+    onTargetHandled?.();
+  }, [targetVendorItemId, loading, vendors]);
 
   if (loading) return <ActivityIndicator style={{ marginTop: 40 }} color={Colors.gold} />;
   if (vendors.length === 0) return (
@@ -522,18 +508,8 @@ function SavedTab({ workspaceId, refreshKey }: { workspaceId: number; refreshKey
         </View>
       </View>
 
-      {/* Card Carousel */}
-      <ScrollView
-        ref={scrollRef}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={handleScrollEnd}
-        onScrollEndDrag={handleScrollEnd}
-        snapToInterval={CARD_WIDTH}
-        decelerationRate="fast"
-        style={styles.carouselContainer}
-        contentContainerStyle={{ paddingRight: 0 }}
-      >
+      {/* 2-Column Card Grid */}
+      <View style={styles.cardGrid}>
         {currentItems.map((sv) => (
           <SavedCard
             key={sv.id}
@@ -544,23 +520,7 @@ function SavedTab({ workspaceId, refreshKey }: { workspaceId: number; refreshKey
             onViewDetails={setDetailItem}
           />
         ))}
-      </ScrollView>
-
-      {/* Dot Indicators */}
-      {currentItems.length > 1 && (
-        <View style={styles.dotRow}>
-          {currentItems.map((_, i) => (
-            <TouchableOpacity
-              key={i}
-              onPress={() => scrollToIndex(i)}
-              style={[
-                styles.dot,
-                i === cardIndex ? styles.dotActive : styles.dotInactive,
-              ]}
-            />
-          ))}
-        </View>
-      )}
+      </View>
 
       {/* Detail Modal (preserved for full info + remove) */}
       <Modal visible={!!detailItem} animationType="slide" presentationStyle="pageSheet">
@@ -988,9 +948,8 @@ function BudgetTab({ workspaceId }: { workspaceId: number }) {
   );
 }
 
-// --- Notes Tab ---
-function NotesTab({ workspaceId }: { workspaceId: number }) {
-  const router = useRouter();
+// --- Notes Card (entry point for overlay) ---
+function NotesCard({ workspaceId, onOpen }: { workspaceId: number; onOpen: () => void }) {
   const [noteCount, setNoteCount] = useState(0);
 
   useEffect(() => {
@@ -1006,11 +965,11 @@ function NotesTab({ workspaceId }: { workspaceId: number }) {
   return (
     <TouchableOpacity
       style={styles.notesCard}
-      onPress={() => router.push({ pathname: '/notes', params: { workspaceId } })}
+      onPress={onOpen}
       activeOpacity={0.8}
     >
       <View style={styles.notesIcon}>
-        <Ionicons name="document-text" size={20} color={Colors.gold} />
+        <Ionicons name="document-text" size={24} color={Colors.gold} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.notesTitle}>Notes</Text>
@@ -1161,6 +1120,13 @@ export default function HubTab() {
   const initialTab = params.tab && validTabs.includes(params.tab) ? params.tab : 'saved';
   const [activeTab, setActiveTab] = useState(initialTab);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isNotesOpen, setIsNotesOpen] = useState(false);
+  const [targetVendorItemId, setTargetVendorItemId] = useState<number | null>(null);
+
+  const handleNavigateToVendor = useCallback((vendorItemId: number) => {
+    setActiveTab('saved');
+    setTargetVendorItemId(vendorItemId);
+  }, []);
 
   // React to route param changes from home quick actions
   useEffect(() => {
@@ -1201,13 +1167,26 @@ export default function HubTab() {
             ))}
           </View>
 
-          {activeTab === 'saved' && <SavedTab workspaceId={workspaceId} refreshKey={refreshKey} />}
+          {activeTab === 'saved' && (
+            <SavedTab
+              workspaceId={workspaceId}
+              refreshKey={refreshKey}
+              targetVendorItemId={targetVendorItemId}
+              onTargetHandled={() => setTargetVendorItemId(null)}
+            />
+          )}
           {activeTab === 'budget' && <BudgetTab workspaceId={workspaceId} />}
-          {activeTab === 'notes' && <NotesTab workspaceId={workspaceId} />}
+          {activeTab === 'notes' && <NotesCard workspaceId={workspaceId} onOpen={() => setIsNotesOpen(true)} />}
           {activeTab === 'invites' && <InvitesTab workspaceId={workspaceId} />}
         </ScrollView>
       </SafeAreaView>
     </LinearGradient>
+    <NotesScreen
+      isOpen={isNotesOpen}
+      onClose={() => setIsNotesOpen(false)}
+      workspaceId={workspaceId}
+      onNavigateToVendor={handleNavigateToVendor}
+    />
     </FadeScreen>
   );
 }
@@ -1231,19 +1210,19 @@ const styles = StyleSheet.create({
   categoryDropdownOptionActive: { backgroundColor: Colors.goldLight },
   categoryDropdownOptionText: { fontSize: FontSize.md, fontFamily: FontFamily.sans, color: Colors.text },
   categoryDropdownOptionTextActive: { color: Colors.gold, fontFamily: FontFamily.sansSemiBold },
-  // Saved — Carousel
-  carouselContainer: { marginHorizontal: -Spacing.lg },
+  // Saved — Card Grid
+  cardGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: GRID_GAP, marginTop: 8 },
   // Saved — Card
-  savedCard: { backgroundColor: Colors.surface, borderRadius: BorderRadius.xl, overflow: 'hidden', marginHorizontal: Spacing.lg, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 16 },
-  cardHero: { height: 176, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
-  cardMonogram: { fontSize: 56, fontFamily: FontFamily.serifBold, color: 'rgba(255,255,255,0.6)' },
-  cardPriceBadge: { position: 'absolute', top: 12, right: 12, backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: BorderRadius.full, paddingHorizontal: 10, paddingVertical: 4 },
-  cardPriceBadgeText: { fontSize: 11, fontWeight: '600', color: Colors.text },
-  cardHeroOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 16, paddingBottom: 14, paddingTop: 40 },
-  cardTitle: { fontSize: FontSize.xl, fontFamily: FontFamily.serifBold, color: '#fff' },
-  cardLocationRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  cardLocationText: { fontSize: FontSize.sm, fontFamily: FontFamily.sans, color: 'rgba(255,255,255,0.8)' },
-  cardStatusRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
+  savedCard: { backgroundColor: Colors.surface, borderRadius: BorderRadius.xl, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 12 },
+  cardHero: { height: 120, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  cardMonogram: { fontSize: 36, fontFamily: FontFamily.serifBold, color: 'rgba(255,255,255,0.6)' },
+  cardPriceBadge: { position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: BorderRadius.full, paddingHorizontal: 8, paddingVertical: 2 },
+  cardPriceBadgeText: { fontSize: 10, fontWeight: '600', color: Colors.text },
+  cardHeroOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 10, paddingBottom: 10, paddingTop: 30 },
+  cardTitle: { fontSize: FontSize.sm, fontFamily: FontFamily.serifBold, color: '#fff' },
+  cardLocationRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 1 },
+  cardLocationText: { fontSize: 10, fontFamily: FontFamily.sans, color: 'rgba(255,255,255,0.8)' },
+  cardStatusRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 10, paddingVertical: 8 },
   // Saved — StatusPill
   statusPill: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: BorderRadius.full, paddingHorizontal: 12, paddingVertical: 6 },
   statusPillText: { fontSize: 11, fontWeight: '600' },
@@ -1253,28 +1232,23 @@ const styles = StyleSheet.create({
   statusModalOption: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 12 },
   statusModalOptionText: { fontSize: FontSize.md, fontWeight: '500' },
   // Saved — Card Expanded
-  cardExpandedContent: { paddingHorizontal: 16, paddingBottom: 16, gap: 12 },
-  cardBio: { fontSize: FontSize.md, fontFamily: FontFamily.sans, color: Colors.textSecondary, lineHeight: 22 },
-  cardBadgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  cardGoldBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: BorderRadius.full, backgroundColor: Colors.goldLight, paddingHorizontal: 10, paddingVertical: 5 },
-  cardGoldBadgeText: { fontSize: FontSize.xs, fontWeight: '500', color: Colors.gold },
-  cardGreyBadge: { borderRadius: BorderRadius.full, backgroundColor: '#F3F4F6', paddingHorizontal: 10, paddingVertical: 5 },
-  cardGreyBadgeText: { fontSize: FontSize.xs, fontWeight: '500', color: Colors.textSecondary },
-  cardFeatureRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  cardFeatureTag: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: BorderRadius.full, backgroundColor: '#E8F4F0', paddingHorizontal: 10, paddingVertical: 5 },
-  cardFeatureTagText: { fontSize: FontSize.xs, fontWeight: '500', color: '#4A9B7F' },
-  cardContactRow: { flexDirection: 'row', gap: 10 },
-  cardCallBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: BorderRadius.full, backgroundColor: Colors.primary, paddingVertical: 12 },
-  cardCallBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.sansSemiBold, color: '#fff' },
-  cardEmailBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: BorderRadius.full, borderWidth: 1, borderColor: 'rgba(26,26,26,0.15)', paddingVertical: 12 },
-  cardEmailBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.sansSemiBold, color: Colors.text },
-  cardViewDetailsBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 8 },
-  cardViewDetailsBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.sansMedium, color: Colors.gold },
-  // Saved — Dots
-  dotRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: 12 },
-  dot: { borderRadius: BorderRadius.full, height: 6 },
-  dotActive: { width: 24, backgroundColor: Colors.gold },
-  dotInactive: { width: 6, backgroundColor: '#D1D5DB' },
+  cardExpandedContent: { paddingHorizontal: 10, paddingBottom: 12, gap: 8 },
+  cardBio: { fontSize: 11, fontFamily: FontFamily.sans, color: Colors.textSecondary, lineHeight: 16 },
+  cardBadgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
+  cardGoldBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, borderRadius: BorderRadius.full, backgroundColor: Colors.goldLight, paddingHorizontal: 6, paddingVertical: 3 },
+  cardGoldBadgeText: { fontSize: 10, fontWeight: '500', color: Colors.gold },
+  cardGreyBadge: { borderRadius: BorderRadius.full, backgroundColor: '#F3F4F6', paddingHorizontal: 6, paddingVertical: 3 },
+  cardGreyBadgeText: { fontSize: 10, fontWeight: '500', color: Colors.textSecondary },
+  cardFeatureRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
+  cardFeatureTag: { flexDirection: 'row', alignItems: 'center', gap: 2, borderRadius: BorderRadius.full, backgroundColor: '#E8F4F0', paddingHorizontal: 6, paddingVertical: 3 },
+  cardFeatureTagText: { fontSize: 10, fontWeight: '500', color: '#4A9B7F' },
+  cardContactRow: { flexDirection: 'row', gap: 6 },
+  cardCallBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, borderRadius: BorderRadius.full, backgroundColor: Colors.primary, paddingVertical: 8 },
+  cardCallBtnText: { fontSize: 11, fontFamily: FontFamily.sansSemiBold, color: '#fff' },
+  cardEmailBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, borderRadius: BorderRadius.full, borderWidth: 1, borderColor: 'rgba(26,26,26,0.15)', paddingVertical: 8 },
+  cardEmailBtnText: { fontSize: 11, fontFamily: FontFamily.sansSemiBold, color: Colors.text },
+  cardViewDetailsBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3, paddingVertical: 4 },
+  cardViewDetailsBtnText: { fontSize: 11, fontFamily: FontFamily.sansMedium, color: Colors.gold },
   // Budget
   budgetCard: { backgroundColor: Colors.surface, borderRadius: BorderRadius.xl, padding: Spacing.lg, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12 },
   budgetLabel: { fontSize: FontSize.md, fontFamily: FontFamily.sansMedium, color: Colors.text, marginBottom: 12 },
