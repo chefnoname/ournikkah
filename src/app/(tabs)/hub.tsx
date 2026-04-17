@@ -12,7 +12,6 @@ import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator, Alert,
-  Dimensions,
   Linking,
   Modal,
   ScrollView,
@@ -41,10 +40,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   dj: 'DJs & Entertainment',
 };
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
 const GRID_GAP = 10;
-const GRID_PADDING = 24; // hub horizontal padding
-const CARD_WIDTH = (SCREEN_WIDTH - GRID_PADDING * 2 - GRID_GAP) / 2;
 
 const STATUS_OPTIONS = [
   { value: 'saved', label: 'Saved', bg: '#F3F4F6', fg: '#6B6B6B' },
@@ -235,7 +231,7 @@ function SavedCard({
   const monogram = item?.title?.charAt(0) || '?';
 
   return (
-    <View style={[styles.savedCard, { width: CARD_WIDTH }]}>
+    <View style={styles.savedCard}>
       <TouchableOpacity onPress={onToggle} activeOpacity={0.9}>
         {/* Compact Hero */}
         <View style={styles.cardHero}>
@@ -266,17 +262,17 @@ function SavedCard({
             )}
           </LinearGradient>
         </View>
+      </TouchableOpacity>
 
-        {/* Status + Chevron row */}
-        <View style={styles.cardStatusRow}>
-          <StatusPill
-            currentStatus={sv.contactStatus || 'saved'}
-            onStatusChange={(status) => onStatusChange(sv.vendorItemId, status)}
-          />
-          <Animated.View style={chevronStyle}>
-            <Ionicons name="chevron-down" size={14} color={Colors.textSecondary} />
-          </Animated.View>
-        </View>
+      {/* Status + Chevron row */}
+      <TouchableOpacity style={styles.cardStatusRow} onPress={onToggle} activeOpacity={0.9}>
+        <StatusPill
+          currentStatus={sv.contactStatus || 'saved'}
+          onStatusChange={(status) => onStatusChange(sv.vendorItemId, status)}
+        />
+        <Animated.View style={chevronStyle}>
+          <Ionicons name="chevron-down" size={14} color={Colors.textSecondary} />
+        </Animated.View>
       </TouchableOpacity>
 
       {/* Expanded Content */}
@@ -384,9 +380,25 @@ function SavedTab({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contactStatus }),
       });
+      setVendors(prev => prev.map(v => (v.vendorItemId === vendorItemId ? { ...v, contactStatus } : v)));
+      setDetailItem(prev => (prev && prev.vendorItemId === vendorItemId ? { ...prev, contactStatus } : prev));
       if (contactStatus === 'booked') Alert.alert('🎉 Finalised!', 'This choice has been saved to your Summary.');
       fetch_();
     } catch { Alert.alert('Error', 'Failed to update status.'); }
+  };
+
+  const openStatusPicker = (vendorItemId: number, currentStatus: string) => {
+    Alert.alert(
+      'Update Status',
+      'Choose a booking status',
+      [
+        ...STATUS_OPTIONS.map(opt => ({
+          text: opt.value === currentStatus ? `✓ ${opt.label}` : opt.label,
+          onPress: () => updateStatus(vendorItemId, opt.value),
+        })),
+        { text: 'Cancel', style: 'cancel' as const },
+      ]
+    );
   };
 
   const handleRemove = (sv: SavedVendorWithItem) => {
@@ -515,7 +527,7 @@ function SavedTab({
             key={sv.id}
             sv={sv}
             isExpanded={expandedId === sv.id}
-            onToggle={() => setExpandedId(expandedId === sv.id ? null : sv.id)}
+            onToggle={() => setExpandedId((prev) => (prev === sv.id ? null : sv.id))}
             onStatusChange={updateStatus}
             onViewDetails={setDetailItem}
           />
@@ -603,14 +615,10 @@ function SavedTab({
                   return (
                     <TouchableOpacity
                       style={[styles.detailStatusBtn, { backgroundColor: current.bg, flex: 1 }]}
-                      onPress={() => {
-                        const currentIdx = STATUS_OPTIONS.findIndex(s => s.value === (detailItem.contactStatus || 'saved'));
-                        const nextIdx = (currentIdx + 1) % STATUS_OPTIONS.length;
-                        updateStatus(detailItem.vendorItemId, STATUS_OPTIONS[nextIdx].value);
-                      }}
+                      onPress={() => openStatusPicker(detailItem.vendorItemId, detailItem.contactStatus || 'saved')}
                     >
                       <Ionicons name="flag-outline" size={18} color={current.fg} />
-                      <Text style={[styles.detailStatusBtnText, { color: current.fg }]}>{current.label} — Tap to update</Text>
+                      <Text style={[styles.detailStatusBtnText, { color: current.fg }]}>{current.label} — Tap to choose</Text>
                     </TouchableOpacity>
                   );
                 })()}
@@ -1211,9 +1219,9 @@ const styles = StyleSheet.create({
   categoryDropdownOptionText: { fontSize: FontSize.md, fontFamily: FontFamily.sans, color: Colors.text },
   categoryDropdownOptionTextActive: { color: Colors.gold, fontFamily: FontFamily.sansSemiBold },
   // Saved — Card Grid
-  cardGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: GRID_GAP, marginTop: 8 },
+  cardGrid: { flexDirection: 'column', gap: GRID_GAP, marginTop: 8 },
   // Saved — Card
-  savedCard: { backgroundColor: Colors.surface, borderRadius: BorderRadius.xl, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 12 },
+  savedCard: { width: '100%', backgroundColor: Colors.surface, borderRadius: BorderRadius.xl, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 12 },
   cardHero: { height: 120, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   cardMonogram: { fontSize: 36, fontFamily: FontFamily.serifBold, color: 'rgba(255,255,255,0.6)' },
   cardPriceBadge: { position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: BorderRadius.full, paddingHorizontal: 8, paddingVertical: 2 },

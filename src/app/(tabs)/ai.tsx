@@ -1,19 +1,19 @@
+import FadeScreen from '@/components/FadeScreen';
 import { BorderRadius, Colors, FontFamily, FontSize, GradientConfig, Spacing } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import FadeScreen from '@/components/FadeScreen';
 
 const PHRASES = [
-  'Plan My Nikah',
+  'Plan My Nikkah',
   'Find a Venue',
   'Find Halal Catering',
   'Create an Invitation',
   'Write My Mahr',
   'Find an Officiant',
-  'Have My Perfect Nikah',
+  'Have My Perfect Nikkah',
 ];
 
 export default function AITab() {
@@ -34,7 +34,7 @@ export default function AITab() {
               <Ionicons name="ellipsis-horizontal" size={24} color={Colors.gold} />
               <View style={styles.aiBadge}>
                 <Ionicons name="sparkles" size={14} color={Colors.gold} />
-                <Text style={styles.aiBadgeText}>MyNikkah AI</Text>
+                <Text style={styles.aiBadgeText}>OurNikkah AI</Text>
               </View>
             </View>
 
@@ -49,7 +49,7 @@ export default function AITab() {
           </View>
 
           <Text style={styles.footerText}>
-            Your personal Nikah planning assistant. Coming soon.
+            Your personal Nikkah planning assistant. Coming soon.
           </Text>
         </View>
       </SafeAreaView>

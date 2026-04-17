@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -78,9 +79,11 @@ export default function NotesScreen({ isOpen, onClose, workspaceId, onNavigateTo
   const [savedVendors, setSavedVendors] = useState<SavedVendorWithItem[]>([]);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionStart, setMentionStart] = useState(0);
+  const [isContentEditing, setIsContentEditing] = useState(true);
   // Refs so selection/change handlers always see the latest values without stale closures
   const contentRef = useRef('');
   const cursorPosRef = useRef(0);
+  const contentInputRef = useRef<TextInput | null>(null);
 
   // Fetch saved vendors once when the modal opens (served from server cache on re-open)
   useEffect(() => {
@@ -100,6 +103,7 @@ export default function NotesScreen({ isOpen, onClose, workspaceId, onNavigateTo
     setNoteContent('');
     contentRef.current = '';
     setMentionQuery(null);
+    setIsContentEditing(true);
     setIsEditing(true);
   }, []);
 
@@ -109,6 +113,7 @@ export default function NotesScreen({ isOpen, onClose, workspaceId, onNavigateTo
     setNoteContent(note.content);
     contentRef.current = note.content;
     setMentionQuery(null);
+    setIsContentEditing(true);
     setIsEditing(true);
   }, []);
 
@@ -119,6 +124,7 @@ export default function NotesScreen({ isOpen, onClose, workspaceId, onNavigateTo
     setNoteContent('');
     contentRef.current = '';
     setMentionQuery(null);
+    setIsContentEditing(true);
   }, []);
 
   const handleSave = useCallback(async () => {
@@ -173,6 +179,7 @@ export default function NotesScreen({ isOpen, onClose, workspaceId, onNavigateTo
 
   /** Replace the `@query` segment with a formatted mention token. */
   const insertMention = useCallback((sv: SavedVendorWithItem) => {
+    if (!Number.isFinite(sv.vendorItemId)) return;
     const title = sv.vendorItem?.title || 'Vendor';
     const mention = `@[${title}](${sv.vendorItemId})`;
     const before = contentRef.current.slice(0, mentionStart);
@@ -181,7 +188,20 @@ export default function NotesScreen({ isOpen, onClose, workspaceId, onNavigateTo
     contentRef.current = newContent;
     setNoteContent(newContent);
     setMentionQuery(null);
+    setIsContentEditing(false);
   }, [mentionStart]);
+
+  useEffect(() => {
+    if (mentionQuery !== null) {
+      Keyboard.dismiss();
+      setIsContentEditing(false);
+    }
+  }, [mentionQuery]);
+
+  const resumeEditing = useCallback(() => {
+    setIsContentEditing(true);
+    requestAnimationFrame(() => contentInputRef.current?.focus());
+  }, []);
 
   /** Filtered list shown inside the picker. */
   const filteredVendors = useMemo(() => {
@@ -193,12 +213,32 @@ export default function NotesScreen({ isOpen, onClose, workspaceId, onNavigateTo
 
   /** Called when a rendered mention chip is tapped in the notes list. */
   const handleMentionPress = useCallback((vendorItemId: number) => {
-    onClose();
-    onNavigateToVendor?.(vendorItemId);
+    if (!Number.isFinite(vendorItemId)) return;
+    // Close nested editor modal first, then close Notes layer and navigate.
+    // This avoids unstable modal teardown order on some devices.
+    setIsEditing(false);
+    setMentionQuery(null);
+    setIsContentEditing(true);
+    requestAnimationFrame(() => {
+      onClose();
+      onNavigateToVendor?.(vendorItemId);
+    });
   }, [onClose, onNavigateToVendor]);
 
   const isSaving = isCreating || isUpdating;
   const canSave = noteTitle.trim().length > 0 && !isSaving;
+  const hasDraftMentions = useMemo(() => /@\[(.+?)\]\((\d+)\)/.test(noteContent), [noteContent]);
+  const draftMentionLinks = useMemo(() => {
+    const seen = new Set<number>();
+    const links: { vendorItemId: number; text: string }[] = [];
+    const parts = parseMentions(noteContent);
+    parts.forEach((part) => {
+      if (part.type !== 'mention' || !part.vendorItemId || seen.has(part.vendorItemId)) return;
+      seen.add(part.vendorItemId);
+      links.push({ vendorItemId: part.vendorItemId, text: part.text });
+    });
+    return links;
+  }, [noteContent]);
 
   return (
     <>
@@ -298,16 +338,58 @@ export default function NotesScreen({ isOpen, onClose, workspaceId, onNavigateTo
                   onChangeText={setNoteTitle}
                   autoFocus={!editingNoteId}
                 />
-                <TextInput
-                  style={styles.contentInput}
-                  placeholder="Brain dump your ideas… type @ to mention a saved vendor"
-                  placeholderTextColor={Colors.textSecondary}
-                  value={noteContent}
-                  onChangeText={handleContentChange}
-                  onSelectionChange={handleSelectionChange}
-                  multiline
-                  textAlignVertical="top"
-                />
+                {isContentEditing ? (
+                  <>
+                    <TextInput
+                      ref={contentInputRef}
+                      style={styles.contentInput}
+                      placeholder="Brain dump your ideas… type @ to mention a saved vendor"
+                      placeholderTextColor={Colors.textSecondary}
+                      value={noteContent}
+                      onChangeText={handleContentChange}
+                      onSelectionChange={handleSelectionChange}
+                      onFocus={() => setIsContentEditing(true)}
+                      multiline
+                      textAlignVertical="top"
+                    />
+                    {draftMentionLinks.length > 0 && (
+                      <View style={styles.editorMentionsWrap}>
+                        <Text style={styles.editorMentionsLabel}>Linked vendors</Text>
+                        <View style={styles.editorMentionsRow}>
+                          {draftMentionLinks.map((mention) => (
+                            <TouchableOpacity
+                              key={mention.vendorItemId}
+                              style={styles.editorMentionChip}
+                              onPress={() => handleMentionPress(mention.vendorItemId)}
+                              activeOpacity={0.8}
+                            >
+                              <Text style={styles.editorMentionChipText}>{mention.text}</Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      </View>
+                    )}
+                  </>
+                ) : (
+                  <View style={styles.previewWrap}>
+                    {noteContent.trim().length > 0 ? (
+                      hasDraftMentions ? (
+                        <NoteContent content={noteContent} onMentionPress={handleMentionPress} />
+                      ) : (
+                        <Text style={styles.previewText}>{noteContent}</Text>
+                      )
+                    ) : (
+                      <Text style={styles.previewPlaceholder}>Tap to continue editing your note</Text>
+                    )}
+                    <TouchableOpacity
+                      activeOpacity={0.85}
+                      style={styles.resumeEditBtn}
+                      onPress={resumeEditing}
+                    >
+                      <Text style={styles.resumeEditBtnText}>Tap to continue editing</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
 
               {/* Mention Picker — sits between content and keyboard */}
@@ -556,6 +638,63 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     backgroundColor: 'transparent',
     paddingTop: 8,
+  },
+  editorMentionsWrap: {
+    marginTop: 10,
+    marginBottom: 8,
+    gap: 8,
+  },
+  editorMentionsLabel: {
+    fontSize: FontSize.xs,
+    fontFamily: FontFamily.sansMedium,
+    color: Colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  editorMentionsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  editorMentionChip: {
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: Colors.goldLight,
+  },
+  editorMentionChipText: {
+    fontSize: FontSize.sm,
+    fontFamily: FontFamily.sansSemiBold,
+    color: Colors.gold,
+  },
+  previewWrap: {
+    flex: 1,
+    paddingTop: 8,
+  },
+  previewText: {
+    fontSize: FontSize.base,
+    fontFamily: FontFamily.sans,
+    color: Colors.text,
+    lineHeight: 24,
+  },
+  previewPlaceholder: {
+    fontSize: FontSize.base,
+    fontFamily: FontFamily.sans,
+    color: Colors.textSecondary,
+    lineHeight: 24,
+  },
+  resumeEditBtn: {
+    marginTop: 16,
+    alignSelf: 'flex-start',
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.goldLight,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  resumeEditBtnText: {
+    fontSize: FontSize.sm,
+    fontFamily: FontFamily.sansMedium,
+    color: Colors.gold,
   },
   // Mention chip (rendered in the note list)
   mentionChip: {

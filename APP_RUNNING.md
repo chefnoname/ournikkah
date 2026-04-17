@@ -112,7 +112,7 @@ npm start
 ├─────────────────────────────────────────────┤
 │                                             │
 │ ┌───────────────────────────────────────┐  │
-│ │ 📝 Venue Ideas for Nikah              │  │
+│ │ 📝 Venue Ideas for Nikkah              │  │
 │ │ We should check out the gardens at   │  │
 │ │ the Ritz...                          │  │
 │ │                                       │  │
@@ -205,7 +205,7 @@ npm start
 │                                             │
 │ Title                                       │
 │ ┌───────────────────────────────────────┐  │
-│ │ Venue Ideas for Nikah                 │  │
+│ │ Venue Ideas for Nikkah                 │  │
 │ └───────────────────────────────────────┘  │
 │                                             │
 │ Content                                     │

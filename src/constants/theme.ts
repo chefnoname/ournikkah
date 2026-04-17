@@ -1,5 +1,5 @@
 export const Colors = {
-  // MyNikkah brand palette
+  // Nikkah brand palette
   primary: '#1A1A1A',
   gold: '#C9A96E',
   goldLight: '#FDF3E3',
